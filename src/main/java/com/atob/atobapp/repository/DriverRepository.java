@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DriverRepository extends JpaRepository<TruckDriver,String> {
+    TruckDriver findAllByEmail(String email);
 }

@@ -96,6 +96,4 @@ public class Product {
     public void setStock(BigInteger stock) {
         Stock = stock;
     }
-
-
 }
