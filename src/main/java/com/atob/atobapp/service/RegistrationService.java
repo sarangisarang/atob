@@ -19,7 +19,7 @@ public class RegistrationService {
     public Customer signUp(Customer newCustumer) {
      //chack emal address
         if (newCustumer.getEmail() == null){
-            throw new RuntimeException("Email address not provided");
+            throw new RuntimeException("Email address not provided!!!");
         }
         // check of custumer exists this email
         Customer customer = customerRepository.findAllByEmail(newCustumer.getEmail());
