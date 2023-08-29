@@ -32,7 +32,7 @@ public class RegistrationService {
     public TruckDriver signUpDriver(TruckDriver newTruckDriver) {
         // chack email address driver
         if (newTruckDriver.getEmail() == null){
-            throw  new RuntimeException("Email address not provided");
+            throw  new RuntimeException("Email address not provided!!!");
         }
         //check of driver exists this email
         TruckDriver truckDriver = driverRepository.findAllByEmail(newTruckDriver.getEmail());
