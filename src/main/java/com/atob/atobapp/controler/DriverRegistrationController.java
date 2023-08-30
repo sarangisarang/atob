@@ -23,4 +23,5 @@ public class DriverRegistrationController {
         return  registrationService.signUpDriver(newTruckDriver);
     }
 
+
 }

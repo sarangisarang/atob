@@ -38,9 +38,12 @@ public class RegistrationService {
         TruckDriver truckDriver = driverRepository.findAllByEmail(newTruckDriver.getEmail());
         if (truckDriver != null){
             throw new RuntimeException("custumer " + newTruckDriver.getEmail() + " exists");
+        } else{
+            truckDriver = new TruckDriver();
+            truckDriver.setId(UUID.randomUUID().toString());
+            return driverRepository.save(truckDriver);
         }
-        truckDriver.setId(UUID.randomUUID().toString());
-        return  driverRepository.save(newTruckDriver);
+
 
     }
 }
