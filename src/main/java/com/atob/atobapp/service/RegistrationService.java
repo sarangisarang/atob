@@ -1,14 +1,16 @@
 package com.atob.atobapp.service;
-
 import com.atob.atobapp.domain.Customer;
 import com.atob.atobapp.domain.TruckDriver;
 import com.atob.atobapp.repository.CustomerRepository;
 import com.atob.atobapp.repository.DriverRepository;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
-
+@Getter
+@Setter
 @Service
 public class RegistrationService {
     @Autowired
@@ -16,7 +18,8 @@ public class RegistrationService {
     @Autowired
     private DriverRepository driverRepository;
 
-    public Customer signUp(Customer newCustumer) {
+     public Customer signUp(Customer newCustumer) {
+
      //chack emal address
         if (newCustumer.getEmail() == null){
             throw new RuntimeException("Email address not provided!!!");

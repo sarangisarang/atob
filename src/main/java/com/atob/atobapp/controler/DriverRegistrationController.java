@@ -1,5 +1,4 @@
 package com.atob.atobapp.controler;
-
 import com.atob.atobapp.domain.Customer;
 import com.atob.atobapp.domain.TruckDriver;
 import com.atob.atobapp.service.RegistrationService;
@@ -22,6 +21,4 @@ public class DriverRegistrationController {
     public TruckDriver signUpDriver(@RequestBody TruckDriver newTruckDriver){
         return  registrationService.signUpDriver(newTruckDriver);
     }
-
-
 }
