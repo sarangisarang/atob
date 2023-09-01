@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @Entity
 @Setter
 @Getter
-public class TruckOrder {
+public class TransportOrder {
     @Id
     private String orderId;
     private Integer orderNo;
