@@ -7,15 +7,17 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.UUID;
-@Getter
-@Setter
+
 @Service
 public class RegistrationService {
     @Autowired
+    @Setter
+    @Getter
     private CustomerRepository customerRepository;
     @Autowired
+    @Getter
+    @Setter
     private DriverRepository driverRepository;
 
      public Customer signUp(Customer newCustumer) {
@@ -41,12 +43,8 @@ public class RegistrationService {
         TruckDriver truckDriver = driverRepository.findAllByEmail(newTruckDriver.getEmail());
         if (truckDriver != null){
             throw new RuntimeException("custumer " + newTruckDriver.getEmail() + " exists");
-        } else{
-            truckDriver = new TruckDriver();
-            truckDriver.setId(UUID.randomUUID().toString());
-            return driverRepository.save(truckDriver);
-        }
-
-
+            }
+        newTruckDriver.setId(UUID.randomUUID().toString());
+        return driverRepository.save(newTruckDriver);
     }
 }
