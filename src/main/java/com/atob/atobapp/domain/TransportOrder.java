@@ -20,4 +20,8 @@ public class TransportOrder {
     @ManyToOne
     @JoinColumn(name="Customer_id")
     private Customer customer;
+
+    @ManyToOne
+    @JoinColumn(name="Product_id")
+    private Product product;
 }
