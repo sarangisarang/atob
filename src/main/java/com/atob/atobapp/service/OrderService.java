@@ -14,7 +14,11 @@ public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
-    public Carrier processing(Carrier newcarrier){
-    if()
+    public Carrier processing(Carrier newcarrier) {
+        if (OrderStatus.Processing != null){
+            throw new RuntimeException("processing and can not conect");
+        }
+        newcarrier.set
+        return orderRepository.save();
     }
 }
