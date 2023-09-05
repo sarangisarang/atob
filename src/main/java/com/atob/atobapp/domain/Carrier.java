@@ -9,7 +9,7 @@ import lombok.Setter;
 @Entity
 @Setter
 @Getter
-public class TruckDriver {
+public class Carrier {
     @Id
     private String id;
     private String email;

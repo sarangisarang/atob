@@ -1,6 +1,6 @@
 package com.atob.atobapp.service;
 import com.atob.atobapp.domain.Customer;
-import com.atob.atobapp.domain.TruckDriver;
+import com.atob.atobapp.domain.Carrier;
 import com.atob.atobapp.repository.CustomerRepository;
 import com.atob.atobapp.repository.DriverRepository;
 import lombok.Getter;
@@ -34,17 +34,17 @@ public class RegistrationService {
         newCustumer.setId(UUID.randomUUID().toString());
         return  customerRepository.save(newCustumer);
         }
-    public TruckDriver signUpDriver(TruckDriver newTruckDriver) {
+    public Carrier signUpDriver(Carrier newCarrier) {
         // chack email address driver
-        if (newTruckDriver.getEmail() == null){
+        if (newCarrier.getEmail() == null){
             throw  new RuntimeException("Email address not provided!!!");
         }
         //check of driver exists this email
-        TruckDriver truckDriver = driverRepository.findAllByEmail(newTruckDriver.getEmail());
-        if (truckDriver != null){
-            throw new RuntimeException("custumer " + newTruckDriver.getEmail() + " exists");
+        Carrier carrier = driverRepository.findAllByEmail(newCarrier.getEmail());
+        if (carrier != null){
+            throw new RuntimeException("custumer " + newCarrier.getEmail() + " exists");
             }
-        newTruckDriver.setId(UUID.randomUUID().toString());
-        return driverRepository.save(newTruckDriver);
+        newCarrier.setId(UUID.randomUUID().toString());
+        return driverRepository.save(newCarrier);
     }
 }

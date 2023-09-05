@@ -24,5 +24,5 @@ public class Product {
     private BigInteger Stock;
     @ManyToOne
     @JoinColumn(name="TruchDriver_id")
-    private TruckDriver truckDriver;
+    private Carrier carrier;
 }

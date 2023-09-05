@@ -1,6 +1,6 @@
 package com.atob.atobapp.controler;
 import com.atob.atobapp.domain.Customer;
-import com.atob.atobapp.domain.TruckDriver;
+import com.atob.atobapp.domain.Carrier;
 import com.atob.atobapp.service.RegistrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +18,7 @@ public class DriverRegistrationController {
         return registrationService.signUp(newCustumer);
     }
     @PostMapping("/signUpDriver")
-    public TruckDriver signUpDriver(@RequestBody TruckDriver newTruckDriver){
-        return  registrationService.signUpDriver(newTruckDriver);
+    public Carrier signUpDriver(@RequestBody Carrier newCarrier){
+        return  registrationService.signUpDriver(newCarrier);
     }
 }
