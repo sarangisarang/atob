@@ -15,9 +15,13 @@ public class TransportOrder {
     private LocalDate orderDate;
     private LocalDate shippingDate;
     private String isDelivered;
+    private Location shippingFrom;
+    private  Location shippingTo;
+
 
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
+
 
     @ManyToOne
     @JoinColumn(name="Customer_id")
