@@ -16,7 +16,7 @@ public class TransportOrder {
     private LocalDate shippingDate;
     private String isDelivered;
     private Location shippingFrom;
-    private  Location shippingTo;
+    private Location shippingTo;
 
 
     @Enumerated(EnumType.STRING)

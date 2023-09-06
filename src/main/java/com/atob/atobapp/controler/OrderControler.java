@@ -1,5 +1,4 @@
 package com.atob.atobapp.controler;
-
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.repository.OrderRepository;
 import lombok.Getter;
@@ -21,8 +20,6 @@ public class OrderControler {
     @Getter
     @Setter
     private OrderRepository orderRepository;
-
-
 
     @PostMapping("/newOrder")
     public TransportOrder newOrders(@RequestBody TransportOrder transportOrder){
