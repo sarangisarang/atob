@@ -26,10 +26,10 @@ public class OrderService {
     @Getter
     private OrderRepository orderRepository;
 
-    public TransportOrder createSaveOrders(@RequestBody TransportOrder transportOrder, String CustomerId) {
+ /*   public TransportOrder createSaveOrders(@RequestBody TransportOrder transportOrder, String CustomerId) {
         transportOrder.setId(UUID.randomUUID().toString());
         Customer customer = customerRepository.findById(CustomerId).orElseThrow();
         transportOrder.setCustomer(customer);
         return orderRepository.save(transportOrder);
-    }
+    }*/
 }
