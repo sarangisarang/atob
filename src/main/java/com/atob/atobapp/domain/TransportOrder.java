@@ -15,13 +15,16 @@ public class TransportOrder {
     private LocalDate orderDate;
     private LocalDate shippingDate;
     private String isDelivered;
-    private Location shippingFrom;
-    private Location shippingTo;
+    private String shippingFrom;
+    private String shippingTo;
 
 
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
+    @ManyToOne
+    @JoinColumn(name="Location_id")
+    private Location location;
 
     @ManyToOne
     @JoinColumn(name="Customer_id")

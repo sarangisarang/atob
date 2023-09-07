@@ -22,6 +22,7 @@ public class Product {
     private byte[] image5;
     private byte[] image6;
     private BigInteger Stock;
+
     @ManyToOne
     @JoinColumn(name="TruchDriver_id")
     private Carrier carrier;
