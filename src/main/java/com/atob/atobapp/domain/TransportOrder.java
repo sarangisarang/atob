@@ -10,6 +10,7 @@ import java.time.LocalDate;
 @Getter
 public class TransportOrder {
     @Id
+    private String id;
     private String orderId;
     private Integer orderNo;
     private LocalDate orderDate;
