@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 @Getter
 public class OrderControler {
 
+
+
     @Autowired
     @Getter
     @Setter
@@ -24,9 +26,8 @@ public class OrderControler {
         return orderRepository.save(transportOrder);
     }
 
- /*   @PostMapping("/order/{CustomerId}")
-    public TransportOrder saveOrders(@RequestBody TransportOrder transportOrder, @PathVariable String CustomerId){
-        return OrderService.createSaveOrders(transportOrder,CustomerId);
+  @PostMapping("/order/{CustomerId}") // why here dont working?
+    public  TransportOrder saveOrders(@RequestBody TransportOrder transportOrder, @PathVariable String CustomerId){
+      return OrderService.createSaveOrders(transportOrder,CustomerId);
     }
-*/
 }
