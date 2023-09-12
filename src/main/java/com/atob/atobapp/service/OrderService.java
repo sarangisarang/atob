@@ -12,19 +12,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.util.UUID;
 
 @Service
-@Setter
-@Getter
 public class OrderService {
     @Autowired
-    @Setter
-    @Getter
     private CustomerRepository customerRepository;
     @Autowired
-    @Setter
-    @Getter
     private OrderRepository orderRepository;
 
-   public TransportOrder createSaveOrders(@RequestBody TransportOrder transportOrder, String CustomerId) {
+   public TransportOrder saveOrder(@RequestBody TransportOrder transportOrder, String CustomerId) {
         transportOrder.setId(UUID.randomUUID().toString());
         Customer customer = customerRepository.findById(CustomerId).orElseThrow();
         transportOrder.setCustomer(customer);

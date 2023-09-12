@@ -11,12 +11,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("register")
 public class DriverRegistrationController {
+
     @Autowired
     private RegistrationService registrationService;
+
     @PostMapping("/signUp")
     public Customer signUp(@RequestBody Customer newCustumer){
         return registrationService.signUp(newCustumer);
     }
+
     @PostMapping("/signUpDriver")
     public Carrier signUpDriver(@RequestBody Carrier newCarrier){
         return  registrationService.signUpDriver(newCarrier);

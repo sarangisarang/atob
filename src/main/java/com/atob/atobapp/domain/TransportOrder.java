@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
-
 @Entity
 @Setter
 @Getter
@@ -16,16 +15,19 @@ public class TransportOrder {
     private LocalDate orderDate;
     private LocalDate shippingDate;
     private String isDelivered;
-    private String shippingFrom;
-    private String shippingTo;
+
+    @ManyToOne
+    @JoinColumn(name="shippingfrom_id")
+    private Location shippingFrom;
+
+    @ManyToOne
+    @JoinColumn(name="shippingto_id")
+    private Location shippingTo;
 
 
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
-    @ManyToOne
-    @JoinColumn(name="Location_id")
-    private Location location;
 
     @ManyToOne
     @JoinColumn(name="Customer_id")

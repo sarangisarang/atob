@@ -7,27 +7,33 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 
 @RestController
-@RequestMapping("order")
-@Setter
-@Getter
+@RequestMapping("show")
 public class OrderControler {
-
-
-
     @Autowired
-    @Getter
-    @Setter
+    private OrderService orderService;
+    @Autowired
     private OrderRepository orderRepository;
 
-    @PostMapping("/newOrder")
+    @PostMapping("/newOrder/{costomerId}")
     public TransportOrder newOrders(@RequestBody TransportOrder transportOrder){
         return orderRepository.save(transportOrder);
     }
 
-  @PostMapping("/order/{CustomerId}") // why here dont working?
-    public  TransportOrder saveOrders(@RequestBody TransportOrder transportOrder, @PathVariable String CustomerId){
-      return OrderService.createSaveOrders(transportOrder,CustomerId);
+    @GetMapping("/order")
+    public List<TransportOrder> getAllOrders(){
+        return orderRepository.findAll();
+    }
+
+    @GetMapping("/order/{id}")
+    public TransportOrder getOrder(@PathVariable String id) {
+        return orderRepository.findById(id).orElseThrow();
+    }
+
+    @PostMapping("/order/{CustomerId}")
+    public TransportOrder saveOrder(@RequestBody TransportOrder transportOrder,@PathVariable String CustomerId){
+        return orderService.saveOrder(transportOrder,CustomerId);
     }
 }
