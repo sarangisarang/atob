@@ -1,6 +1,6 @@
 package com.atob.atobapp.service;
 
-public enum OrderStatus {
+public enum Status {
         Pending,
         Processing,
     }

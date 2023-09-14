@@ -2,8 +2,6 @@ package com.atob.atobapp.controler;
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.repository.OrderRepository;
 import com.atob.atobapp.service.OrderService;
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,7 +30,7 @@ public class OrderControler {
         return orderRepository.findById(id).orElseThrow();
     }
 
-    @PostMapping("/order/{CustomerId}")
+    @PostMapping("/order/bycustomer/{CustomerId}")
     public TransportOrder saveOrder(@RequestBody TransportOrder transportOrder,@PathVariable String CustomerId){
         return orderService.saveOrder(transportOrder,CustomerId);
     }

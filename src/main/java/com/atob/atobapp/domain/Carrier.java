@@ -20,7 +20,4 @@ public class Carrier {
     private String City;
     private Integer Phone;
 
-    @ManyToOne
-    @JoinColumn(name="TransportOrder_id")
-    private TransportOrder transportOrder;
 }

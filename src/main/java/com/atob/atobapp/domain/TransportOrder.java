@@ -1,9 +1,10 @@
 package com.atob.atobapp.domain;
-import com.atob.atobapp.service.OrderStatus;
+import com.atob.atobapp.service.Status;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDate;
+
 @Entity
 @Setter
 @Getter
@@ -26,7 +27,7 @@ public class TransportOrder {
 
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus orderStatus;
+    private Status status;
 
 
     @ManyToOne
