@@ -15,7 +15,7 @@ public class TransportOrder {
     private Integer orderNo;
     private LocalDate orderDate;
     private LocalDate shippingDate;
-    private String isDelivered;
+    private LocalDate deliveredDate;
 
     @ManyToOne
     @JoinColumn(name="shippingfrom_id")

@@ -16,9 +16,9 @@ public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
-   public TransportOrder saveOrder(@RequestBody TransportOrder transportOrder, String CustomerId) {
+   public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, String Customer_Id) {
         transportOrder.setId(UUID.randomUUID().toString());
-        Customer customer = customerRepository.findById(CustomerId).orElseThrow();
+        Customer customer = customerRepository.findById(Customer_Id).orElseThrow();
         transportOrder.setCustomer(customer);
         return orderRepository.save(transportOrder);
     }

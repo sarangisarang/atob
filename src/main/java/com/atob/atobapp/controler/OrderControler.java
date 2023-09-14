@@ -1,7 +1,10 @@
 package com.atob.atobapp.controler;
+import com.atob.atobapp.domain.Shipping;
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.repository.OrderRepository;
+import com.atob.atobapp.repository.ShippmentRepository;
 import com.atob.atobapp.service.OrderService;
+import com.atob.atobapp.service.ShippingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +17,15 @@ public class OrderControler {
     private OrderService orderService;
     @Autowired
     private OrderRepository orderRepository;
+    @Autowired
+    private ShippingService shippingService;
+    @Autowired
+    private ShippmentRepository shippmentRepository;
 
-    @PostMapping("/newOrder/{costomerId}")
-    public TransportOrder newOrders(@RequestBody TransportOrder transportOrder){
-        return orderRepository.save(transportOrder);
+
+    @PostMapping("/newOrder/{customer_id}")
+    public TransportOrder newOrders(@RequestBody TransportOrder transportOrder,@PathVariable("customer_id") String Customer_id){
+        return orderService.newOrders(transportOrder,Customer_id);
     }
 
     @GetMapping("/order")
@@ -30,8 +38,12 @@ public class OrderControler {
         return orderRepository.findById(id).orElseThrow();
     }
 
-    @PostMapping("/order/bycustomer/{CustomerId}")
-    public TransportOrder saveOrder(@RequestBody TransportOrder transportOrder,@PathVariable String CustomerId){
-        return orderService.saveOrder(transportOrder,CustomerId);
+    @PostMapping("/order/shipping")
+    public Shipping creatshipping(@RequestBody Shipping shipping){
+        return shippmentRepository.save(shipping);
+    }
+    @GetMapping("order/shipping")
+    public  List<Shipping> showShipping(){
+        return shippmentRepository.findAll();
     }
 }
