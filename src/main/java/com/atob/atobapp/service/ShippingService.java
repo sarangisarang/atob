@@ -21,10 +21,10 @@ public class ShippingService {
         if (shippingUpdate.getStatus() != Status.processing) {
             System.out.println("Not allowed to update Shipping");
         } else {
-            shippingUpdate.setdeliveryStartAt(shippingUpdate.getdeliveryStartAt());
-            shippingUpdate.setdeliveryEndAt(shippingUpdate.getdeliveryEndAt());
-            shippingUpdate.settrackingLangitude(shippingUpdate.gettrackingLangitude());
-            shippingUpdate.settrackingLatitude(shippingUpdate.gettrackingLatitude());
+            shippingUpdate.setdeliveryStartAt(shipping.getdeliveryStartAt());
+            shippingUpdate.setdeliveryEndAt(shipping.getdeliveryEndAt());
+            shippingUpdate.settrackingLangitude(shipping.gettrackingLangitude());
+            shippingUpdate.settrackingLatitude(shipping.gettrackingLatitude());
         }
         return shippmentRepository.save(shippingUpdate);
     }
