@@ -39,11 +39,15 @@ public class OrderControler {
     }
 
     @PostMapping("/order/shipping")
-    public Shipping creatshipping(@RequestBody Shipping shipping){
+    public Shipping creatShipping(@RequestBody Shipping shipping){
         return shippmentRepository.save(shipping);
     }
     @GetMapping("order/shipping")
     public  List<Shipping> showShipping(){
         return shippmentRepository.findAll();
+    }
+    @PutMapping("/order/shipping/{id}")
+    public Shipping updateOrder(@RequestBody Shipping shipping,@PathVariable String id){
+        return shippingService.updateOrder(shipping,id);
     }
 }
