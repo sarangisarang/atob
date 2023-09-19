@@ -1,5 +1,4 @@
 package com.atob.atobapp.service;
-
 import com.atob.atobapp.domain.Shipping;
 import com.atob.atobapp.repository.ShippmentRepository;
 import lombok.Getter;
@@ -16,15 +15,14 @@ public class ShippingService {
     private ShippmentRepository shippmentRepository;
 
 
-    public Shipping updateOrder(@RequestBody Shipping shipping, String id) {
+    public Shipping updateShipping(@RequestBody Shipping shipping, String id) {
         Shipping shippingUpdate = shippmentRepository.findById(id).orElseThrow();
-        if (shippingUpdate.getStatus() != Status.processing) {
+        if (shippingUpdate.getStatusService() != StatusService.processing){
             System.out.println("Not allowed to update Shipping");
-        } else {
-            shippingUpdate.setdeliveryStartAt(shipping.getdeliveryStartAt());
-            shippingUpdate.setdeliveryEndAt(shipping.getdeliveryEndAt());
-            shippingUpdate.settrackingLangitude(shipping.gettrackingLangitude());
-            shippingUpdate.settrackingLatitude(shipping.gettrackingLatitude());
+        }else{
+            shippingUpdate.setDeliveryEndAt(shipping.getDeliveryEndAt());
+            shippingUpdate.setTrackingLangitude(shipping.getTrackingLangitude());
+            shippingUpdate.setTrackingLatitude(shipping.getTrackingLatitude());
         }
         return shippmentRepository.save(shippingUpdate);
     }

@@ -1,5 +1,5 @@
 package com.atob.atobapp.domain;
-import com.atob.atobapp.service.Status;
+import com.atob.atobapp.service.StatusService;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,5 +30,5 @@ public class Shipping {
 
     @Enumerated(EnumType.STRING)
     @JoinColumn(name="status_id")
-    private Status status;
+    private StatusService statusService;
 }

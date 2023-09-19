@@ -6,7 +6,6 @@ import com.atob.atobapp.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-
 import java.util.UUID;
 
 @Service
@@ -16,9 +15,9 @@ public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
-   public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, String Customer_Id) {
+   public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, String CustomerId) {
         transportOrder.setId(UUID.randomUUID().toString());
-        Customer customer = customerRepository.findById(Customer_Id).orElseThrow();
+        Customer customer = customerRepository.findById(CustomerId).orElseThrow();
         transportOrder.setCustomer(customer);
         return orderRepository.save(transportOrder);
     }

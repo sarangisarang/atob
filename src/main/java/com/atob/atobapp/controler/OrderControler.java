@@ -23,9 +23,9 @@ public class OrderControler {
     private ShippmentRepository shippmentRepository;
 
 
-    @PostMapping("/newOrder/{customer_id}")
-    public TransportOrder newOrders(@RequestBody TransportOrder transportOrder,@PathVariable("customer_id") String Customer_id){
-        return orderService.newOrders(transportOrder,Customer_id);
+    @PostMapping("/newOrder/{customerid}")
+    public TransportOrder newOrders(@RequestBody TransportOrder transportOrder,@PathVariable("customer_id") String Customerid){
+        return orderService.newOrders(transportOrder,Customerid);
     }
 
     @GetMapping("/order")
@@ -40,14 +40,16 @@ public class OrderControler {
 
     @PostMapping("/order/shipping")
     public Shipping creatShipping(@RequestBody Shipping shipping){
-        return shippmentRepository.save(shipping);
+    return shippmentRepository.save(shipping);
     }
+
     @GetMapping("order/shipping")
     public  List<Shipping> showShipping(){
         return shippmentRepository.findAll();
     }
+
     @PutMapping("/order/shipping/{id}")
-    public Shipping updateOrder(@RequestBody Shipping shipping,@PathVariable String id){
-        return shippingService.updateOrder(shipping,id);
+    public Shipping updateShipping(@RequestBody Shipping shipping,@PathVariable String id){
+        return shippingService.updateShipping(shipping,id);
     }
 }

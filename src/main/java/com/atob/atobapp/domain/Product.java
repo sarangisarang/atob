@@ -10,6 +10,7 @@ import java.math.BigInteger;
 @Setter
 @Getter
 public class Product {
+
     @Id
     private String id;
     private String productName;

@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 @Getter
 public class Location {
+
     @Id
     private String id;
     private String Address;

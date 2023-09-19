@@ -1,6 +1,6 @@
 package com.atob.atobapp.service;
 
-public enum Status {
+public enum StatusService {
         Pending,
         processing,
         WaitingCarrier,
