@@ -15,8 +15,10 @@ public class Shipping {
     private String id;
     private LocalDate deliveryStartAt;
     private LocalDate deliveryEndAt;
+
     @Column(columnDefinition = "numeric(50,20)")
-    private BigDecimal trackingLangitude;
+    private BigDecimal trackingLongitude;
+
     @Column(columnDefinition = "numeric(50,20)")
     private BigDecimal trackingLatitude;
 

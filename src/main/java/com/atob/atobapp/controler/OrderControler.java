@@ -38,18 +38,4 @@ public class OrderControler {
         return orderRepository.findById(id).orElseThrow();
     }
 
-    @PostMapping("/order/shipping")
-    public Shipping creatShipping(@RequestBody Shipping shipping){
-    return shippmentRepository.save(shipping);
-    }
-
-    @GetMapping("order/shipping")
-    public  List<Shipping> showShipping(){
-        return shippmentRepository.findAll();
-    }
-
-    @PutMapping("/order/shipping/{id}")
-    public Shipping updateShipping(@RequestBody Shipping shipping,@PathVariable String id){
-        return shippingService.updateShipping(shipping,id);
-    }
 }
