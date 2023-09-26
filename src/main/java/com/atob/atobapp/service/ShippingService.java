@@ -23,6 +23,7 @@ public class ShippingService {
             System.out.println("Not allowed to update Shipping");
         }else{
             shippingUpdate.setDeliveryEndAt(shipping.getDeliveryEndAt());
+            shippingUpdate.setDeliveryStartAt(shippingUpdate.getDeliveryStartAt());
             shippingUpdate.setTrackingLongitude(shipping.getTrackingLongitude());
             shippingUpdate.setTrackingLatitude(shipping.getTrackingLatitude());
         }
