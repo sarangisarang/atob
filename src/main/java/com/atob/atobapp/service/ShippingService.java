@@ -6,7 +6,6 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -17,7 +16,6 @@ public class ShippingService {
 
     @Autowired
     private ShippmentRepository shippmentRepository;
-
 
     public Shipping updateShipping(@RequestBody Shipping shipping, String id) {
         Shipping shippingUpdate = shippmentRepository.findById(id).orElseThrow();
@@ -44,9 +42,10 @@ public class ShippingService {
     }
 }
 
-    //ToDo: creat Shipping, postMapping fin
-//Todo: Start shipping processing, putMapping fin
+//ToDo: creat Shipping, postMapping done
+//Todo: Start shipping processing, putMapping done
+//Todo: Tracking,putMapping,putMapping done
+
 // Todo: Start Shipping,putMapping
-//Todo: Tracking,putMapping,putMapping
 // Todo: Shipping Delivered, putMapping
 

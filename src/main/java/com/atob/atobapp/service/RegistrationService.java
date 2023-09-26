@@ -47,4 +47,17 @@ public class RegistrationService {
         newCarrier.setId(UUID.randomUUID().toString());
         return driverRepository.save(newCarrier);
     }
+
+    public Customer updateCostomer(Customer customer, String id) {
+         Customer updateCustomer = customerRepository.findById(id).orElseThrow();
+         updateCustomer.setCity(customer.getCity());
+         updateCustomer.setAddress(customer.getAddress());
+         updateCustomer.setEmail(customer.getEmail());
+         updateCustomer.setFirstName(customer.getFirstName());
+         updateCustomer.setLastName(customer.getLastName());
+         updateCustomer.setPassword(customer.getPassword());
+         updateCustomer.setPostcode(customer.getPostcode());
+         updateCustomer.setPhone(customer.getPhone());
+         return customerRepository.save(updateCustomer);
+    }
 }

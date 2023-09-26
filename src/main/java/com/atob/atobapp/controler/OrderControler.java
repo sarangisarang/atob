@@ -1,13 +1,13 @@
 package com.atob.atobapp.controler;
-import com.atob.atobapp.domain.Shipping;
+import com.atob.atobapp.domain.Customer;
 import com.atob.atobapp.domain.TransportOrder;
-import com.atob.atobapp.repository.OrderRepository;
+import com.atob.atobapp.repository.CustomerRepository;
+import com.atob.atobapp.repository.TransportOrderRepository;
 import com.atob.atobapp.repository.ShippmentRepository;
 import com.atob.atobapp.service.OrderService;
 import com.atob.atobapp.service.ShippingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -16,26 +16,35 @@ public class OrderControler {
     @Autowired
     private OrderService orderService;
     @Autowired
-    private OrderRepository orderRepository;
+    private TransportOrderRepository transportOrderRepository;
     @Autowired
     private ShippingService shippingService;
     @Autowired
     private ShippmentRepository shippmentRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
 
 
-    @PostMapping("/newOrder/{customerid}")
-    public TransportOrder newOrders(@RequestBody TransportOrder transportOrder,@PathVariable("customer_id") String Customerid){
-        return orderService.newOrders(transportOrder,Customerid);
-    }
-
-    @GetMapping("/order")
-    public List<TransportOrder> getAllOrders(){
-        return orderRepository.findAll();
+    @GetMapping("/orders")
+    public List<TransportOrder> getAllOrders() {
+        return transportOrderRepository.findAll();
     }
 
     @GetMapping("/order/{id}")
     public TransportOrder getOrder(@PathVariable String id) {
-        return orderRepository.findById(id).orElseThrow();
+        return transportOrderRepository.findById(id).orElseThrow();
     }
+
+    @PostMapping("/Order/{customerid}")
+    public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, @PathVariable("customerid") String Customerid) {
+        return orderService.newOrders(transportOrder, Customerid);
+    }
+
+    @PutMapping("/order/{id}") // new made 26.10.2023
+    public TransportOrder updateOrder(@RequestBody TransportOrder transportOrder, @PathVariable String id) {
+        return orderService.createUpdateOrder(transportOrder, id);
+    }
+
+    // @DeleteMapping  habe ich eine frage.
 
 }

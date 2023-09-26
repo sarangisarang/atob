@@ -1,4 +1,5 @@
 insert into Customer (id,email,first_Name,last_Name,Password,Address,Postcode,City,Phone) values ('1','bekakikalishvili@gmail.com','lilian','mircos','dushqu','birkestrase50', 40233, 'dusseldorf', 015434232);
+insert into Customer (id,email,first_Name,last_Name,Password,Address,Postcode,City,Phone) values ('2','sofia@gmail.com','sofio','abuladze','dushqu','birkestrase50', 40233, 'dusseldorf', 0152322);
 insert into Carrier (id,email,first_Name,last_Name,Password,Address,Postcode,City,Phone) values ('1','beka@gmail.com','beka','imnadze','dushqu','Birkestrase50', 40233, 'Dusseldorf', 015434232);
 insert into Location (id,Address,Postcode,City,Phone) values ('1','Doctor LLanso 117','07740','Menorca',33434);
 insert into Location (id,Address,Postcode,City,Phone) values ('2','Doctor LLanso 114','07740','Alayor',33434);
