@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/Shipping")
+@RequestMapping("/shipping")
 public class ShippingController{
     @Autowired
     private ShippmentRepository shippmentRepository;
@@ -21,7 +21,7 @@ public class ShippingController{
         return shippingService.creatShipping(shipping);
     }
 
-    @GetMapping("order/shipping")
+    @GetMapping("order/findall")
     public List<Shipping> showShipping(){
         return shippmentRepository.findAll();
     }
@@ -31,7 +31,7 @@ public class ShippingController{
         return shippingService.updateShipping(shipping,id);
     }
 
-    @PutMapping("/shipping/{shipping_id}/tracking/{attitude}/{longitude}")
+    @PutMapping("/shipping/tracking/{attitude}/{longitude}")
     public Shipping updateCordinad(@PathVariable String shipping_id, @PathVariable BigDecimal attitude, @PathVariable BigDecimal longitude){
         return shippingService.updateCoordinate(shipping_id,attitude,longitude);
     }
