@@ -19,6 +19,7 @@ public class OrderService {
         transportOrder.setId(UUID.randomUUID().toString());
         Customer customer = customerRepository.findById(CustomerId).orElseThrow();
         transportOrder.setCustomer(customer);
+        transportOrder.setStatusService(StatusService.Pending);
         return transportOrderRepository.save(transportOrder);
     }
 

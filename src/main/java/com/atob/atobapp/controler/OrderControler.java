@@ -35,7 +35,7 @@ public class OrderControler {
         return transportOrderRepository.findById(id).orElseThrow();
     }
 
-    @PostMapping("/Order/{customerid}")
+    @PostMapping("/Order/{customerid}") // 28.10.2023 made order with status pending
     public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, @PathVariable("customerid") String Customerid) {
         return orderService.newOrders(transportOrder, Customerid);
     }
@@ -44,7 +44,11 @@ public class OrderControler {
     public TransportOrder updateOrder(@RequestBody TransportOrder transportOrder, @PathVariable String id) {
         return orderService.createUpdateOrder(transportOrder, id);
     }
-
     // @DeleteMapping  habe ich eine frage.
+
+    @PutMapping("/order/{id}/processing") // new made 28.19
+    public TransportOrder updateStatusProcessing(@PathVariable String id){
+        return orderService.createUpdateOrder(id)
+    }
 
 }
