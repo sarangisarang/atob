@@ -1,5 +1,4 @@
 package com.atob.atobapp.controler;
-import com.atob.atobapp.domain.Customer;
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.repository.CustomerRepository;
 import com.atob.atobapp.repository.TransportOrderRepository;
@@ -37,18 +36,24 @@ public class OrderControler {
 
     @PostMapping("/Order/{customerid}") // 28.10.2023 made order with status pending
     public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, @PathVariable("customerid") String Customerid) {
-        return orderService.newOrders(transportOrder, Customerid);
+        return orderService.newOrders(transportOrder,Customerid);
     }
 
     @PutMapping("/order/{id}") // new made 26.10.2023
     public TransportOrder updateOrder(@RequestBody TransportOrder transportOrder, @PathVariable String id) {
-        return orderService.createUpdateOrder(transportOrder, id);
+        return orderService.createUpdateOrder(transportOrder,id);
     }
-    // @DeleteMapping  habe ich eine frage.
 
-    @PutMapping("/order/{id}/processing") // new made 28.19
-    public TransportOrder updateStatusProcessing(@PathVariable String id){
-        return orderService.createUpdateOrder(id)
+    @PutMapping("order/{id}/processing")
+    public TransportOrder updateOrderStatusProcessing(@PathVariable String id){
+        return orderService.updateOrderStatusProcessing(id);
     }
+
+
+    // @DeleteMapping  habe ich eine frage.
+    /*@PutMapping("/order/{id}/processing") // new made 28.19
+    public TransportOrder updateStatusProcessing(@PathVariable String id){
+        return orderService.createUpdateOrder(id);
+    } */
 
 }

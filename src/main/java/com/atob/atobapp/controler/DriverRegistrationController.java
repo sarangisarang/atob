@@ -23,16 +23,15 @@ public class DriverRegistrationController {
         return registrationService.signUp(newCustumer);
     }
 
-    @GetMapping("/Customers") //26.10.2023  new show me all Customers
+    @GetMapping("/Customers") // 26.10.2023  new show me all Customers
     public List<Customer> getAllCostumers(){
         return customerRepository.findAll();
     }
+
     @PutMapping("/Customer/{id}") // 26.10.2023 new made this
     public Customer updateCostumer(@RequestBody Customer customer,@PathVariable String id){
         return registrationService.updateCostomer(customer,id);
     }
-
-
 
     @PostMapping("/signUpDriver")
     public Carrier signUpDriver(@RequestBody Carrier newCarrier){

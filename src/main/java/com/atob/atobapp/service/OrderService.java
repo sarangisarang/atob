@@ -1,6 +1,7 @@
 package com.atob.atobapp.service;
 import com.atob.atobapp.domain.Customer;
 import com.atob.atobapp.domain.TransportOrder;
+import com.atob.atobapp.exceptions.BadRequestException;
 import com.atob.atobapp.repository.CustomerRepository;
 import com.atob.atobapp.repository.TransportOrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,5 +37,14 @@ public class OrderService {
             }
             return  transportOrderRepository.save(ordersToUpdate);
         }
+
+    public TransportOrder updateOrderStatusProcessing(String id) {
+       TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
+       if(transportOrder.getStatusService()!=StatusService.Pending){
+           throw new BadRequestException(" Invaled status ");
+       }
+       transportOrder.setStatusService(StatusService.processing);
+        return  transportOrderRepository.save(transportOrder);
     }
+}
 
