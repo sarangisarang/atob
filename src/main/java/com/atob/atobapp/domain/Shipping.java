@@ -23,14 +23,14 @@ public class Shipping {
     private BigDecimal trackingLatitude;
 
     @OneToOne
-    @JoinColumn(name="carrier_id")
+    @JoinColumn(name = "carrier_id")
     private Carrier carrier;
 
     @OneToOne
-    @JoinColumn(name="order_id")
+    @JoinColumn(name = "order_id")
     private TransportOrder order;
 
     @Enumerated(EnumType.STRING)
-    @JoinColumn(name="status_id")
+    @JoinColumn(name = "status_id")
     private StatusService statusService;
 }

@@ -1,4 +1,5 @@
 package com.atob.atobapp.controler;
+
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.repository.CustomerRepository;
 import com.atob.atobapp.repository.TransportOrderRepository;
@@ -7,6 +8,7 @@ import com.atob.atobapp.service.OrderService;
 import com.atob.atobapp.service.ShippingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -36,17 +38,32 @@ public class OrderControler {
 
     @PostMapping("/Order/{customerid}") // 28.10.2023 made order with status pending
     public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, @PathVariable("customerid") String Customerid) {
-        return orderService.newOrders(transportOrder,Customerid);
+        return orderService.newOrders(transportOrder, Customerid);
     }
 
     @PutMapping("/order/{id}") // new made 26.10.2023
     public TransportOrder updateOrder(@RequestBody TransportOrder transportOrder, @PathVariable String id) {
-        return orderService.createUpdateOrder(transportOrder,id);
+        return orderService.createUpdateOrder(transportOrder, id);
     }
 
     @PutMapping("order/{id}/processing")
-    public TransportOrder updateOrderStatusProcessing(@PathVariable String id){
+    public TransportOrder updateOrderStatusProcessing(@PathVariable String id) {
         return orderService.updateOrderStatusProcessing(id);
+    }
+
+    @PutMapping("order/{id}/waitingCarrier")
+    public TransportOrder updateOrderStatusWaitingCarrier(@PathVariable String id) {
+        return orderService.updateOrderStatusWaitingCarrier(id);
+    }
+
+    @PutMapping("order/{id}/shippet")
+    public TransportOrder updateOrderStatusShippet(@PathVariable String id) {
+        return orderService.updateOrderStatusShippet(id);
+    }
+
+    @PutMapping("order/{id}/delivered")
+    public TransportOrder updateOrderStatusDelivered(@PathVariable String id) {
+        return orderService.updateOrderStatusDelivered(id);
     }
 
 

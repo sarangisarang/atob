@@ -1,4 +1,5 @@
 package com.atob.atobapp.service;
+
 import com.atob.atobapp.domain.Shipping;
 import com.atob.atobapp.repository.ShippmentRepository;
 import lombok.Getter;
@@ -6,6 +7,7 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -19,9 +21,9 @@ public class ShippingService {
 
     public Shipping updateShipping(@RequestBody Shipping shipping, String id) {
         Shipping shippingUpdate = shippmentRepository.findById(id).orElseThrow();
-        if (shippingUpdate.getStatusService() != StatusService.processing){
+        if (shippingUpdate.getStatusService() != StatusService.Processing) {
             System.out.println("Not allowed to update Shipping");
-        }else{
+        } else {
             shippingUpdate.setDeliveryEndAt(shipping.getDeliveryEndAt());
             shippingUpdate.setDeliveryStartAt(shippingUpdate.getDeliveryStartAt());
             shippingUpdate.setTrackingLongitude(shipping.getTrackingLongitude());

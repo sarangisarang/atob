@@ -1,4 +1,5 @@
 package com.atob.atobapp.controler;
+
 import com.atob.atobapp.domain.Customer;
 import com.atob.atobapp.domain.Carrier;
 import com.atob.atobapp.repository.CustomerRepository;
@@ -19,23 +20,23 @@ public class DriverRegistrationController {
 
 
     @PostMapping("/signUpCustomer")
-    public Customer signUp(@RequestBody Customer newCustumer){
+    public Customer signUp(@RequestBody Customer newCustumer) {
         return registrationService.signUp(newCustumer);
     }
 
-    @GetMapping("/Customers") // 26.10.2023  new show me all Customers
-    public List<Customer> getAllCostumers(){
+    @GetMapping("/customers") // 26.10.2023  new show me all Customers
+    public List<Customer> getAllCostumers() {
         return customerRepository.findAll();
     }
 
-    @PutMapping("/Customer/{id}") // 26.10.2023 new made this
-    public Customer updateCostumer(@RequestBody Customer customer,@PathVariable String id){
-        return registrationService.updateCostomer(customer,id);
+    @PutMapping("/customer/{id}") // 26.10.2023 new made this
+    public Customer updateCostumer(@RequestBody Customer customer, @PathVariable String id) {
+        return registrationService.updateCostomer(customer, id);
     }
 
     @PostMapping("/signUpDriver")
-    public Carrier signUpDriver(@RequestBody Carrier newCarrier){
-        return  registrationService.signUpDriver(newCarrier);
+    public Carrier signUpDriver(@RequestBody Carrier newCarrier) {
+        return registrationService.signUpDriver(newCarrier);
     }
 
 }
