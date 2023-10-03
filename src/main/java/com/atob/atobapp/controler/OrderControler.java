@@ -43,7 +43,7 @@ public class OrderControler {
 
     @PutMapping("/order/{id}") // new made 26.10.2023
     public TransportOrder updateOrder(@RequestBody TransportOrder transportOrder, @PathVariable String id) {
-        return orderService.createUpdateOrder(transportOrder, id);
+        return orderService.UpdateOrder(transportOrder, id);
     }
 
     @PutMapping("order/{id}/processing")

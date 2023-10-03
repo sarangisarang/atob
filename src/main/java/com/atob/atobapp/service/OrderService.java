@@ -26,7 +26,7 @@ public class OrderService {
         return transportOrderRepository.save(transportOrder);
     }
 
-    public TransportOrder createUpdateOrder(TransportOrder transportOrder, String id) {
+    public TransportOrder UpdateOrder(TransportOrder transportOrder, String id) {
         TransportOrder ordersToUpdate = transportOrderRepository.findById(id).orElseThrow();
         if (ordersToUpdate.getStatusService() != StatusService.Pending) {
             System.out.println("Not allowed to update  order");
