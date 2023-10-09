@@ -1,5 +1,4 @@
 package com.atob.atobapp.controler;
-
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.repository.CustomerRepository;
 import com.atob.atobapp.repository.TransportOrderRepository;
@@ -43,7 +42,7 @@ public class OrderControler {
 
     @PutMapping("/order/{id}") // new made 26.10.2023
     public TransportOrder updateOrder(@RequestBody TransportOrder transportOrder, @PathVariable String id) {
-        return orderService.UpdateOrder(transportOrder, id);
+        return orderService.updateOrder(transportOrder, id);
     }
 
     @PutMapping("order/{id}/processing")
