@@ -1,17 +1,15 @@
 package com.atob.atobapp.controler;
-
 import com.atob.atobapp.domain.Shipping;
 import com.atob.atobapp.repository.ShippmentRepository;
 import com.atob.atobapp.service.ShippingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
 import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
 @RequestMapping("/shipping")
-public class ShippingController {
+public class ShippingController{
     @Autowired
     private ShippmentRepository shippmentRepository;
     @Autowired

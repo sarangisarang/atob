@@ -1,5 +1,4 @@
 package com.atob.atobapp.domain;
-
 import com.atob.atobapp.service.StatusService;
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -26,17 +26,16 @@ public class OrderService {
         return transportOrderRepository.save(transportOrder);
     }
 
-    public TransportOrder UpdateOrder(TransportOrder transportOrder, String id) {
+    public TransportOrder updateOrder(TransportOrder transportOrder, String id) {
         TransportOrder ordersToUpdate = transportOrderRepository.findById(id).orElseThrow();
         if (ordersToUpdate.getStatusService() != StatusService.Pending) {
-            System.out.println("Not allowed to update  order");
-        } else {
-            ordersToUpdate.setOrderNo(transportOrder.getOrderNo());
-            ordersToUpdate.setOrderDate(transportOrder.getOrderDate());
-            ordersToUpdate.setOrderDate(transportOrder.getOrderDate());
-            ordersToUpdate.setShippingDate(transportOrder.getShippingDate());
-            ordersToUpdate.setDeliveredDate(transportOrder.getDeliveredDate());
+            throw new BadRequestException("Not allowed to update  order");
         }
+        ordersToUpdate.setOrderId(transportOrder.getOrderId());
+        ordersToUpdate.setOrderNo(transportOrder.getOrderNo());
+        ordersToUpdate.setOrderDate(transportOrder.getOrderDate());
+        ordersToUpdate.setShippingDate(transportOrder.getShippingDate());
+        ordersToUpdate.setDeliveredDate(transportOrder.getDeliveredDate());
         return transportOrderRepository.save(ordersToUpdate);
     }
 

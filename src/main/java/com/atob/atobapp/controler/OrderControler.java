@@ -1,5 +1,4 @@
 package com.atob.atobapp.controler;
-
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.repository.CustomerRepository;
 import com.atob.atobapp.repository.TransportOrderRepository;
@@ -36,14 +35,14 @@ public class OrderControler {
         return transportOrderRepository.findById(id).orElseThrow();
     }
 
-    @PostMapping("/Order/{customerid}") // 28.10.2023 made order with status pending
+    @PostMapping("/Order/{customerid}")
     public TransportOrder newOrders(@RequestBody TransportOrder transportOrder, @PathVariable("customerid") String Customerid) {
         return orderService.newOrders(transportOrder, Customerid);
     }
 
-    @PutMapping("/order/{id}") // new made 26.10.2023
+    @PutMapping("/order/{id}")
     public TransportOrder updateOrder(@RequestBody TransportOrder transportOrder, @PathVariable String id) {
-        return orderService.UpdateOrder(transportOrder, id);
+        return orderService.updateOrder(transportOrder,id);
     }
 
     @PutMapping("order/{id}/processing")
