@@ -8,9 +8,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.lang.reflect.Executable;
 import java.time.LocalDate;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 public class TransporOrderServiceTest {
@@ -30,8 +32,8 @@ public class TransporOrderServiceTest {
     private OrderService orderService;
 
 
-    @Test
-    public void given_transportorder_with_all_when_has_status_diferent_pending_can_not_change(){
+    @Test   //  1.0
+    public void given_transportorder_with_all_when_has_status_diferent_pending_can_not_update(){
         TransportOrder orders = createTransportOrder();
         orders.setStatusService(StatusService.Processing);
         transportOrderRepository.save(orders);
@@ -41,8 +43,8 @@ public class TransporOrderServiceTest {
         assertEquals(exception.getMessage(),"Not allowed to update  order" );
     }
 
-    @Test
-    public void give_transportorder_with_all_when_has_status_same_pending_can_change(){
+    @Test   //  1,2
+    public void give_transportorder_with_all_when_has_status_same_pending_can_update(){
         TransportOrder orders = createTransportOrder();
         orders.setStatusService(StatusService.Pending);
         transportOrderRepository.save(orders);
@@ -60,8 +62,9 @@ public class TransporOrderServiceTest {
         assertEquals(updateorders.getOrderDate(), storedOrder.getOrderDate());
         assertEquals(updateorders.getDeliveredDate(), storedOrder.getDeliveredDate());
     }
-    @Test
-    public void give_transportorder_with_all_when_has_status_diferent_processing_can_not_change(){
+
+    @Test   //  2.1
+    public void give_transportorder_with_all_when_has_status_diferent_pending_can_not_change(){
         TransportOrder transportOrder = createTransportOrder();
         transportOrder.setStatusService(StatusService.Processing);
         transportOrderRepository.save(transportOrder);
@@ -71,8 +74,8 @@ public class TransporOrderServiceTest {
         assertEquals(exception.getMessage(),"Invaled status");
     }
 
-    @Test
-    public void give_transporterorder_with_all_when_has_status_Pending_change_status(){
+    @Test   //  2.2
+    public void give_transporterorder_with_all_when_has_status_same_the_pending_can_change_for_Processing(){
     TransportOrder transportOrder =createTransportOrder();
     transportOrder.setStatusService(StatusService.Pending);
     transportOrderRepository.save(transportOrder);
@@ -80,6 +83,71 @@ public class TransporOrderServiceTest {
     neworder.setStatusService(StatusService.WaitingCarrier);
     orderService.updateOrderStatusProcessing("1234");
     }
+
+    @Test   //  3.1
+    public void  give_transporterorder_with_all_when_has_status_diferent_processing_can_not_change(){
+        TransportOrder transportOrder = createTransportOrder();
+        transportOrder.setStatusService(StatusService.Delivered);
+        transportOrderRepository.save(transportOrder);
+        TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
+        Assertions.assertNotNull(neworder);
+        Exception exception  = assertThrows(BadRequestException.class, ()-> orderService.updateOrderStatusProcessing(neworder.getId()));
+        assertEquals(exception.getMessage(),"Invaled status");
+    }
+
+    @Test   //  3.2
+    public  void give_transporterorder_with_all_when_has_status_same_processing_can_change_for_waitingCarrier(){
+        TransportOrder transportOrder =createTransportOrder();
+        transportOrder.setStatusService(StatusService.Processing);
+        transportOrderRepository.save(transportOrder);
+        TransportOrder neworders = transportOrderRepository.findById("1234").orElseThrow();
+        orderService.updateOrderStatusWaitingCarrier(neworders.getId());
+        assertEquals(neworders.getStatusService(), StatusService.Processing);
+    }
+
+    @Test   //  4.1
+    public void give_transporterorder_with_all_when_has_status_diferent_waitingcarrier_can_not_change(){
+        TransportOrder transportOrder = createTransportOrder();
+        transportOrder.setStatusService(StatusService.Shippet);
+        transportOrderRepository.save(transportOrder);
+        TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
+        Assertions.assertNotNull(neworder);
+        Exception exception = assertThrows(BadRequestException.class,()-> orderService.updateOrderStatusShippet(neworder.getId()));
+        assertEquals(exception.getMessage(),"Invaled status");
+    }
+
+    @Test   // 4.2
+    public void give_transporterorder_with_all_when_has_status_same_waitingcarrier_can_change_for_shippet(){
+        TransportOrder transportOrder = createTransportOrder();
+        transportOrder.setStatusService(StatusService.WaitingCarrier);
+        transportOrderRepository.save(transportOrder);
+        TransportOrder neworder =transportOrderRepository.findById("1234").orElseThrow();
+        orderService.updateOrderStatusShippet("1234");
+        assertEquals(neworder.getStatusService(),StatusService.WaitingCarrier);
+    }
+
+    @Test   // 5.1
+    public void give_transporterorder_with_all_when_has_status_difernt_shippet_can_not_change(){
+        TransportOrder transportOrder = createTransportOrder();
+        transportOrder.setStatusService(StatusService.Pending);
+        transportOrderRepository.save(transportOrder);
+        TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
+        Assertions.assertNotNull(neworder);
+        Exception exception = assertThrows(BadRequestException.class,()-> orderService.updateOrderStatusDelivered(neworder.getId()));
+        assertEquals(exception.getMessage(),"Invaled status");
+    }
+
+    @Test
+    public void give_transporterorder_with_all_when_has_status_same_shippet_can_change_for_delivered(){
+        TransportOrder transportOrder = createTransportOrder();
+        transportOrder.setStatusService(StatusService.Shippet);
+        transportOrderRepository.save(transportOrder);
+        TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
+        orderService.updateOrderStatusDelivered(neworder.getId());
+        assertEquals(neworder.getStatusService(),StatusService.Shippet);
+
+    }
+
 
     private static TransportOrder createTransportOrder() {
         TransportOrder orders = new TransportOrder();

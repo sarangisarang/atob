@@ -26,6 +26,7 @@ public class OrderService {
         return transportOrderRepository.save(transportOrder);
     }
 
+    // 1.0 , 1.2
     public TransportOrder updateOrder(TransportOrder transportOrder, String id) {
         TransportOrder ordersToUpdate = transportOrderRepository.findById(id).orElseThrow();
         if (ordersToUpdate.getStatusService() != StatusService.Pending) {
@@ -39,6 +40,7 @@ public class OrderService {
         return transportOrderRepository.save(ordersToUpdate);
     }
 
+    // 2.1 , 2.2
     public TransportOrder updateOrderStatusProcessing(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
         if (transportOrder.getStatusService() != StatusService.Pending) {
@@ -48,6 +50,7 @@ public class OrderService {
         return transportOrderRepository.save(transportOrder);
     }
 
+    // 3.1 , 3.2
     public TransportOrder updateOrderStatusWaitingCarrier(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
         if (transportOrder.getStatusService() != StatusService.Processing) {
@@ -57,15 +60,17 @@ public class OrderService {
         return transportOrderRepository.save(transportOrder);
     }
 
+    // 4.1 , 4.2
     public TransportOrder updateOrderStatusShippet(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
-        if (transportOrder.getStatusService() != StatusService.WaitingCarrier) {
+        if (transportOrder.getStatusService() != StatusService.WaitingCarrier){
             throw new BadRequestException("Invaled status");
         }
         transportOrder.setStatusService(StatusService.Shippet);
         return transportOrderRepository.save(transportOrder);
     }
 
+    // 5.1 , 5.2
     public TransportOrder updateOrderStatusDelivered(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
         if (transportOrder.getStatusService() != StatusService.Shippet) {
@@ -73,8 +78,8 @@ public class OrderService {
         }
         transportOrder.setStatusService(StatusService.Delivered);
         return transportOrderRepository.save(transportOrder);
-    }
 
+    }
 }
 
 
