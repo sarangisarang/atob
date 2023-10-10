@@ -137,7 +137,7 @@ public class TransporOrderServiceTest {
         assertEquals(exception.getMessage(),"Invaled status");
     }
 
-    @Test
+    @Test   // 5.2
     public void give_transporterorder_with_all_when_has_status_same_shippet_can_change_for_delivered(){
         TransportOrder transportOrder = createTransportOrder();
         transportOrder.setStatusService(StatusService.Shippet);
