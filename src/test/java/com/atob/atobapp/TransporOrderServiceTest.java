@@ -32,7 +32,7 @@ public class TransporOrderServiceTest {
     private OrderService orderService;
 
 
-    @Test   //  1.0
+    @Test   //  1.1
     public void given_transportorder_with_all_when_has_status_diferent_pending_can_not_update(){
         TransportOrder orders = createTransportOrder();
         orders.setStatusService(StatusService.Processing);
@@ -43,7 +43,7 @@ public class TransporOrderServiceTest {
         assertEquals(exception.getMessage(),"Not allowed to update  order" );
     }
 
-    @Test   //  1,2
+    @Test   //  1.2
     public void give_transportorder_with_all_when_has_status_same_pending_can_update(){
         TransportOrder orders = createTransportOrder();
         orders.setStatusService(StatusService.Pending);
@@ -80,8 +80,7 @@ public class TransporOrderServiceTest {
     transportOrder.setStatusService(StatusService.Pending);
     transportOrderRepository.save(transportOrder);
     TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
-    neworder.setStatusService(StatusService.WaitingCarrier);
-    orderService.updateOrderStatusProcessing("1234");
+    orderService.updateOrderStatusProcessing(neworder.getId());
     }
 
     @Test   //  3.1
@@ -145,7 +144,6 @@ public class TransporOrderServiceTest {
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
         orderService.updateOrderStatusDelivered(neworder.getId());
         assertEquals(neworder.getStatusService(),StatusService.Shippet);
-
     }
 
 
