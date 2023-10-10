@@ -80,7 +80,10 @@ public class TransporOrderServiceTest {
     transportOrder.setStatusService(StatusService.Pending);
     transportOrderRepository.save(transportOrder);
     TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
-    orderService.updateOrderStatusProcessing(neworder.getId());
+    TransportOrder neworderinfo=orderService.updateOrderStatusProcessing(neworder.getId());
+    TransportOrder testdatabase = transportOrderRepository.findById("1234").orElseThrow();
+    assertEquals(neworderinfo.getStatusService(),StatusService.Processing);
+    assertEquals(testdatabase.getStatusService(),StatusService.Processing);
     }
 
     @Test   //  3.1
