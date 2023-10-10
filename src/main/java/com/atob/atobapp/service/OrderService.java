@@ -26,7 +26,7 @@ public class OrderService {
         return transportOrderRepository.save(transportOrder);
     }
 
-    // 1.0 , 1.2
+    // 1.1 , 1.2
     public TransportOrder updateOrder(TransportOrder transportOrder, String id) {
         TransportOrder ordersToUpdate = transportOrderRepository.findById(id).orElseThrow();
         if (ordersToUpdate.getStatusService() != StatusService.Pending) {
