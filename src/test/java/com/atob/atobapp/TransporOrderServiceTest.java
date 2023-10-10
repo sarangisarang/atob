@@ -74,7 +74,7 @@ public class TransporOrderServiceTest {
         assertEquals(exception.getMessage(),"Invaled status");
     }
 
-    @Test   //  2.2
+    @Test   //  2.2 need make all this stily
     public void give_transporterorder_with_all_when_has_status_same_the_pending_can_change_for_Processing(){
     TransportOrder transportOrder =createTransportOrder();
     transportOrder.setStatusService(StatusService.Pending);
