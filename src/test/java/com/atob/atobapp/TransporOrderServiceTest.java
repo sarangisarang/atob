@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.lang.reflect.Executable;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,7 +33,7 @@ public class TransporOrderServiceTest {
 
     @Test   //  1.1
     public void given_transportorder_with_all_when_has_status_diferent_pending_can_not_update(){
-        TransportOrder orders = createTransportOrder();
+        TransportOrder orders = TestUtils.createTransportOrder();
         orders.setStatusService(StatusService.Processing);
         transportOrderRepository.save(orders);
         TransportOrder neworders =  transportOrderRepository.findById("1234").orElseThrow();
@@ -45,7 +44,7 @@ public class TransporOrderServiceTest {
 
     @Test   //  1.2
     public void give_transportorder_with_all_when_has_status_same_pending_can_update(){
-        TransportOrder orders = createTransportOrder();
+        TransportOrder orders = TestUtils.createTransportOrder();
         orders.setStatusService(StatusService.Pending);
         transportOrderRepository.save(orders);
         TransportOrder updateorders = new TransportOrder();
@@ -65,7 +64,7 @@ public class TransporOrderServiceTest {
 
     @Test   //  2.1
     public void give_transportorder_with_all_when_has_status_diferent_pending_can_not_change(){
-        TransportOrder transportOrder = createTransportOrder();
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
         transportOrder.setStatusService(StatusService.Processing);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworders = transportOrderRepository.findById("1234").orElseThrow();
@@ -76,7 +75,7 @@ public class TransporOrderServiceTest {
 
     @Test   //  2.2 need make all this stily
     public void give_transporterorder_with_all_when_has_status_same_the_pending_can_change_for_Processing(){
-    TransportOrder transportOrder =createTransportOrder();
+    TransportOrder transportOrder = TestUtils.createTransportOrder();
     transportOrder.setStatusService(StatusService.Pending);
     transportOrderRepository.save(transportOrder);
     TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
@@ -88,7 +87,7 @@ public class TransporOrderServiceTest {
 
     @Test   //  3.1
     public void  give_transporterorder_with_all_when_has_status_diferent_processing_can_not_change(){
-        TransportOrder transportOrder = createTransportOrder();
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
         transportOrder.setStatusService(StatusService.Delivered);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
@@ -99,17 +98,17 @@ public class TransporOrderServiceTest {
 
     @Test   //  3.2
     public  void give_transporterorder_with_all_when_has_status_same_processing_can_change_for_waitingCarrier(){
-        TransportOrder transportOrder =createTransportOrder();
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
         transportOrder.setStatusService(StatusService.Processing);
         transportOrderRepository.save(transportOrder);
-        TransportOrder neworders = transportOrderRepository.findById("1234").orElseThrow();
-        orderService.updateOrderStatusWaitingCarrier(neworders.getId());
-        assertEquals(neworders.getStatusService(), StatusService.Processing);
+        orderService.updateOrderStatusWaitingCarrier("1234");
+        TransportOrder testdatabase = transportOrderRepository.findById("1234").orElseThrow();
+        assertEquals(testdatabase.getStatusService(), StatusService.WaitingCarrier);
     }
 
     @Test   //  4.1
     public void give_transporterorder_with_all_when_has_status_diferent_waitingcarrier_can_not_change(){
-        TransportOrder transportOrder = createTransportOrder();
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
         transportOrder.setStatusService(StatusService.Shippet);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
@@ -120,17 +119,17 @@ public class TransporOrderServiceTest {
 
     @Test   // 4.2
     public void give_transporterorder_with_all_when_has_status_same_waitingcarrier_can_change_for_shippet(){
-        TransportOrder transportOrder = createTransportOrder();
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
         transportOrder.setStatusService(StatusService.WaitingCarrier);
         transportOrderRepository.save(transportOrder);
-        TransportOrder neworder =transportOrderRepository.findById("1234").orElseThrow();
         orderService.updateOrderStatusShippet("1234");
-        assertEquals(neworder.getStatusService(),StatusService.WaitingCarrier);
+        TransportOrder neworder =transportOrderRepository.findById("1234").orElseThrow();
+        Assertions.assertEquals(StatusService.Shippet, neworder.getStatusService());
     }
 
     @Test   // 5.1
     public void give_transporterorder_with_all_when_has_status_difernt_shippet_can_not_change(){
-        TransportOrder transportOrder = createTransportOrder();
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
         transportOrder.setStatusService(StatusService.Pending);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
@@ -141,23 +140,11 @@ public class TransporOrderServiceTest {
 
     @Test   // 5.2
     public void give_transporterorder_with_all_when_has_status_same_shippet_can_change_for_delivered(){
-        TransportOrder transportOrder = createTransportOrder();
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
         transportOrder.setStatusService(StatusService.Shippet);
         transportOrderRepository.save(transportOrder);
+        orderService.updateOrderStatusDelivered("1234");
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
-        orderService.updateOrderStatusDelivered(neworder.getId());
-        assertEquals(neworder.getStatusService(),StatusService.Shippet);
-    }
-
-
-    private static TransportOrder createTransportOrder() {
-        TransportOrder orders = new TransportOrder();
-        orders.setOrderNo(20);
-        orders.setOrderId("10");
-        orders.setShippingDate(LocalDate.now());
-        orders.setOrderDate(LocalDate.now());
-        orders.setDeliveredDate(LocalDate.now());
-        orders.setId("1234");
-        return orders;
+        assertEquals(neworder.getStatusService(),StatusService.Delivered);
     }
 }

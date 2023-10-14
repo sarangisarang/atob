@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -67,6 +68,7 @@ public class OrderService {
             throw new BadRequestException("Invaled status");
         }
         transportOrder.setStatusService(StatusService.Shippet);
+        transportOrder.setShippingDate(LocalDate.now());
         return transportOrderRepository.save(transportOrder);
     }
 
@@ -77,6 +79,7 @@ public class OrderService {
             throw new BadRequestException("Invaled status");
         }
         transportOrder.setStatusService(StatusService.Delivered);
+        transportOrder.setDeliveredDate(LocalDate.now());
         return transportOrderRepository.save(transportOrder);
 
     }
