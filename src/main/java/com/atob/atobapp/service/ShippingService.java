@@ -21,7 +21,7 @@ public class ShippingService {
 
     public Shipping updateShipping(@RequestBody Shipping shipping, String id) {
         Shipping shippingUpdate = shippmentRepository.findById(id).orElseThrow();
-        if (shippingUpdate.getStatusService() != StatusService.Processing) {
+        if (shippingUpdate.getCarrierStatus() != CarrierStatus.PickedUp) {
             System.out.println("Not allowed to update Shipping");
         } else {
             shippingUpdate.setDeliveryEndAt(shipping.getDeliveryEndAt());

@@ -1,5 +1,5 @@
 package com.atob.atobapp.domain;
-import com.atob.atobapp.service.StatusService;
+import com.atob.atobapp.service.OrderStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,7 +29,7 @@ public class TransportOrder {
 
 
     @Enumerated(EnumType.STRING)
-    private StatusService statusService;
+    private OrderStatus orderStatus;
 
 
     @ManyToOne

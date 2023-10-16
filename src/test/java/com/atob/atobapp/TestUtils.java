@@ -1,6 +1,7 @@
 package com.atob.atobapp;
 
 import com.atob.atobapp.domain.TransportOrder;
+import com.atob.atobapp.service.OrderStatus;
 
 import java.time.LocalDate;
 
@@ -11,6 +12,7 @@ public class TestUtils {
     public static TransportOrder createTransportOrder() {
         TransportOrder orders = new TransportOrder();
         orders.setOrderNo(20);
+        orders.setOrderStatus(OrderStatus.Pending);
         orders.setOrderId("10");
         orders.setShippingDate(LocalDate.now());
         orders.setOrderDate(LocalDate.now());

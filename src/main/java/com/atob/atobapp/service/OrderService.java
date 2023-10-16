@@ -23,14 +23,14 @@ public class OrderService {
         transportOrder.setId(UUID.randomUUID().toString());
         Customer customer = customerRepository.findById(CustomerId).orElseThrow();
         transportOrder.setCustomer(customer);
-        transportOrder.setStatusService(StatusService.Pending);
+        transportOrder.setOrderStatus(OrderStatus.Pending);
         return transportOrderRepository.save(transportOrder);
     }
 
     // 1.1 , 1.2
     public TransportOrder updateOrder(TransportOrder transportOrder, String id) {
         TransportOrder ordersToUpdate = transportOrderRepository.findById(id).orElseThrow();
-        if (ordersToUpdate.getStatusService() != StatusService.Pending) {
+        if (ordersToUpdate.getOrderStatus() != OrderStatus.Pending) {
             throw new BadRequestException("Not allowed to update  order");
         }
         ordersToUpdate.setOrderId(transportOrder.getOrderId());
@@ -44,30 +44,30 @@ public class OrderService {
     // 2.1 , 2.2
     public TransportOrder updateOrderStatusProcessing(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
-        if (transportOrder.getStatusService() != StatusService.Pending) {
+        if (transportOrder.getOrderStatus() != OrderStatus.Pending) {
             throw new BadRequestException("Invaled status");
         }
-        transportOrder.setStatusService(StatusService.Processing);
+        transportOrder.setOrderStatus(OrderStatus.Processing);
         return transportOrderRepository.save(transportOrder);
     }
 
     // 3.1 , 3.2
     public TransportOrder updateOrderStatusWaitingCarrier(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
-        if (transportOrder.getStatusService() != StatusService.Processing) {
+        if (transportOrder.getOrderStatus() != OrderStatus.Processing) {
             throw new BadRequestException("Invaled status");
         }
-        transportOrder.setStatusService(StatusService.WaitingCarrier);
+        transportOrder.setOrderStatus(OrderStatus.WaitingCarrier);
         return transportOrderRepository.save(transportOrder);
     }
 
     // 4.1 , 4.2
     public TransportOrder updateOrderStatusShippet(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
-        if (transportOrder.getStatusService() != StatusService.WaitingCarrier){
+        if (transportOrder.getOrderStatus() != OrderStatus.WaitingCarrier){
             throw new BadRequestException("Invaled status");
         }
-        transportOrder.setStatusService(StatusService.Shippet);
+        transportOrder.setOrderStatus(OrderStatus.Shippet);
         transportOrder.setShippingDate(LocalDate.now());
         return transportOrderRepository.save(transportOrder);
     }
@@ -75,13 +75,21 @@ public class OrderService {
     // 5.1 , 5.2
     public TransportOrder updateOrderStatusDelivered(String id) {
         TransportOrder transportOrder = transportOrderRepository.findById(id).orElseThrow();
-        if (transportOrder.getStatusService() != StatusService.Shippet) {
+        if (transportOrder.getOrderStatus() != OrderStatus.Shippet) {
             throw new BadRequestException("Invaled status");
         }
-        transportOrder.setStatusService(StatusService.Delivered);
+        transportOrder.setOrderStatus(OrderStatus.Delivered);
         transportOrder.setDeliveredDate(LocalDate.now());
         return transportOrderRepository.save(transportOrder);
 
+    }
+
+    public TransportOrder cancelOrder(TransportOrder transportOrder) {
+        if(transportOrder.getOrderStatus() != OrderStatus.Pending){
+            throw  new BadRequestException("Can not cencel this order");
+        }
+        transportOrder.setOrderStatus(OrderStatus.Cenceled);
+        return transportOrderRepository.save(transportOrder);
     }
 }
 

@@ -3,7 +3,7 @@ import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.exceptions.BadRequestException;
 import com.atob.atobapp.repository.*;
 import com.atob.atobapp.service.OrderService;
-import com.atob.atobapp.service.StatusService;
+import com.atob.atobapp.service.OrderStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +34,7 @@ public class TransporOrderServiceTest {
     @Test   //  1.1
     public void given_transportorder_with_all_when_has_status_diferent_pending_can_not_update(){
         TransportOrder orders = TestUtils.createTransportOrder();
-        orders.setStatusService(StatusService.Processing);
+        orders.setOrderStatus(OrderStatus.Processing);
         transportOrderRepository.save(orders);
         TransportOrder neworders =  transportOrderRepository.findById("1234").orElseThrow();
         Assertions.assertNotNull(neworders);
@@ -45,7 +45,7 @@ public class TransporOrderServiceTest {
     @Test   //  1.2
     public void give_transportorder_with_all_when_has_status_same_pending_can_update(){
         TransportOrder orders = TestUtils.createTransportOrder();
-        orders.setStatusService(StatusService.Pending);
+        orders.setOrderStatus(OrderStatus.Pending);
         transportOrderRepository.save(orders);
         TransportOrder updateorders = new TransportOrder();
         updateorders.setOrderNo(40);
@@ -65,7 +65,7 @@ public class TransporOrderServiceTest {
     @Test   //  2.1
     public void give_transportorder_with_all_when_has_status_diferent_pending_can_not_change(){
         TransportOrder transportOrder = TestUtils.createTransportOrder();
-        transportOrder.setStatusService(StatusService.Processing);
+        transportOrder.setOrderStatus(OrderStatus.Processing);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworders = transportOrderRepository.findById("1234").orElseThrow();
         Assertions.assertNotNull(neworders);
@@ -76,19 +76,19 @@ public class TransporOrderServiceTest {
     @Test   //  2.2 need make all this stily
     public void give_transporterorder_with_all_when_has_status_same_the_pending_can_change_for_Processing(){
     TransportOrder transportOrder = TestUtils.createTransportOrder();
-    transportOrder.setStatusService(StatusService.Pending);
+    transportOrder.setOrderStatus(OrderStatus.Pending);
     transportOrderRepository.save(transportOrder);
     TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
     TransportOrder neworderinfo=orderService.updateOrderStatusProcessing(neworder.getId());
     TransportOrder testdatabase = transportOrderRepository.findById("1234").orElseThrow();
-    assertEquals(neworderinfo.getStatusService(),StatusService.Processing);
-    assertEquals(testdatabase.getStatusService(),StatusService.Processing);
+    assertEquals(neworderinfo.getOrderStatus(), OrderStatus.Processing);
+    assertEquals(testdatabase.getOrderStatus(), OrderStatus.Processing);
     }
 
     @Test   //  3.1
     public void  give_transporterorder_with_all_when_has_status_diferent_processing_can_not_change(){
         TransportOrder transportOrder = TestUtils.createTransportOrder();
-        transportOrder.setStatusService(StatusService.Delivered);
+        transportOrder.setOrderStatus(OrderStatus.Delivered);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
         Assertions.assertNotNull(neworder);
@@ -99,17 +99,17 @@ public class TransporOrderServiceTest {
     @Test   //  3.2
     public  void give_transporterorder_with_all_when_has_status_same_processing_can_change_for_waitingCarrier(){
         TransportOrder transportOrder = TestUtils.createTransportOrder();
-        transportOrder.setStatusService(StatusService.Processing);
+        transportOrder.setOrderStatus(OrderStatus.Processing);
         transportOrderRepository.save(transportOrder);
         orderService.updateOrderStatusWaitingCarrier("1234");
         TransportOrder testdatabase = transportOrderRepository.findById("1234").orElseThrow();
-        assertEquals(testdatabase.getStatusService(), StatusService.WaitingCarrier);
+        assertEquals(testdatabase.getOrderStatus(), OrderStatus.WaitingCarrier);
     }
 
     @Test   //  4.1
     public void give_transporterorder_with_all_when_has_status_diferent_waitingcarrier_can_not_change(){
         TransportOrder transportOrder = TestUtils.createTransportOrder();
-        transportOrder.setStatusService(StatusService.Shippet);
+        transportOrder.setOrderStatus(OrderStatus.Shippet);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
         Assertions.assertNotNull(neworder);
@@ -120,17 +120,17 @@ public class TransporOrderServiceTest {
     @Test   // 4.2
     public void give_transporterorder_with_all_when_has_status_same_waitingcarrier_can_change_for_shippet(){
         TransportOrder transportOrder = TestUtils.createTransportOrder();
-        transportOrder.setStatusService(StatusService.WaitingCarrier);
+        transportOrder.setOrderStatus(OrderStatus.WaitingCarrier);
         transportOrderRepository.save(transportOrder);
         orderService.updateOrderStatusShippet("1234");
         TransportOrder neworder =transportOrderRepository.findById("1234").orElseThrow();
-        Assertions.assertEquals(StatusService.Shippet, neworder.getStatusService());
+        Assertions.assertEquals(OrderStatus.Shippet, neworder.getOrderStatus());
     }
 
     @Test   // 5.1
     public void give_transporterorder_with_all_when_has_status_difernt_shippet_can_not_change(){
         TransportOrder transportOrder = TestUtils.createTransportOrder();
-        transportOrder.setStatusService(StatusService.Pending);
+        transportOrder.setOrderStatus(OrderStatus.Pending);
         transportOrderRepository.save(transportOrder);
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
         Assertions.assertNotNull(neworder);
@@ -141,10 +141,29 @@ public class TransporOrderServiceTest {
     @Test   // 5.2
     public void give_transporterorder_with_all_when_has_status_same_shippet_can_change_for_delivered(){
         TransportOrder transportOrder = TestUtils.createTransportOrder();
-        transportOrder.setStatusService(StatusService.Shippet);
+        transportOrder.setOrderStatus(OrderStatus.Shippet);
         transportOrderRepository.save(transportOrder);
         orderService.updateOrderStatusDelivered("1234");
         TransportOrder neworder = transportOrderRepository.findById("1234").orElseThrow();
-        assertEquals(neworder.getStatusService(),StatusService.Delivered);
+        assertEquals(neworder.getOrderStatus(), OrderStatus.Delivered);
+    }
+    @Test
+    public void cancel_given_order_with_status_pending(){
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
+        transportOrder = transportOrderRepository.save(transportOrder);
+        Assertions.assertEquals(transportOrder.getOrderStatus(), OrderStatus.Pending);
+        transportOrder = orderService.cancelOrder(transportOrder);
+        Assertions.assertEquals(transportOrder.getOrderStatus(), OrderStatus.Cenceled);
+    }
+    @Test
+    public void cancel_give_order_with_status_difenet_pending(){
+        TransportOrder transportOrder = TestUtils.createTransportOrder();
+        transportOrder.setOrderStatus(OrderStatus.Shippet);
+        final TransportOrder canceledorder = transportOrderRepository.save(transportOrder);
+        Assertions.assertNotNull(transportOrder);
+        Exception exception = Assertions.assertThrows(BadRequestException.class,()-> orderService.cancelOrder(canceledorder));
+        assertEquals(exception.getMessage(), "Can not cencel this order");
+
+
     }
 }
