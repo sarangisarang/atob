@@ -39,7 +39,7 @@ public class RegistrationService {
 
     public Carrier signUpDriver(Carrier newCarrier) {
         // chack email address driver
-        if (newCarrier.getEmail() == null) {
+        if (newCarrier.getEmail() == null || !newCarrier.getEmail().contains("@")) {
             throw new RuntimeException("Email address not provided!!!");
         }
         //check of driver exists this email
@@ -51,7 +51,7 @@ public class RegistrationService {
         return driverRepository.save(newCarrier);
     }
 
-    public Customer updateCostomer(Customer customer, String id) {
+    public Customer updateCustomer(Customer customer, String id) {
         Customer updateCustomer = customerRepository.findById(id).orElseThrow();
         updateCustomer.setCity(customer.getCity());
         updateCustomer.setAddress(customer.getAddress());

@@ -19,8 +19,8 @@ public class DriverRegistrationController {
 
 
     @PostMapping("/signUpCustomer")
-    public Customer signUp(@RequestBody Customer newCustumer) {
-        return registrationService.signUp(newCustumer);
+    public Customer signUp(@RequestBody Customer newCustomer) {
+        return registrationService.signUp(newCustomer);
     }
 
     @GetMapping("/customers") // 26.10.2023  new show me all Customers
@@ -30,7 +30,7 @@ public class DriverRegistrationController {
 
     @PutMapping("/customer/{id}") // 26.10.2023 new made this
     public Customer updateCostumer(@RequestBody Customer customer, @PathVariable String id) {
-        return registrationService.updateCostomer(customer, id);
+        return registrationService.updateCustomer(customer, id);
     }
 
     @PostMapping("/signUpDriver")

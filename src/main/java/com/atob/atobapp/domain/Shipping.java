@@ -1,6 +1,5 @@
 package com.atob.atobapp.domain;
 import com.atob.atobapp.service.CarrierStatus;
-import com.atob.atobapp.service.OrderStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +10,6 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class Shipping {
-
     @Id
     private String id;
     private LocalDate deliveryStartAt;

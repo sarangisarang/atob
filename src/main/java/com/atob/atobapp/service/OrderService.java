@@ -1,5 +1,4 @@
 package com.atob.atobapp.service;
-
 import com.atob.atobapp.domain.Customer;
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.exceptions.BadRequestException;
@@ -8,7 +7,6 @@ import com.atob.atobapp.repository.TransportOrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -81,7 +79,6 @@ public class OrderService {
         transportOrder.setOrderStatus(OrderStatus.Delivered);
         transportOrder.setDeliveredDate(LocalDate.now());
         return transportOrderRepository.save(transportOrder);
-
     }
 
     public TransportOrder cancelOrder(TransportOrder transportOrder) {
