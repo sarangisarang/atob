@@ -22,19 +22,19 @@ public class RegistrationService {
     @Setter
     private DriverRepository driverRepository;
 
-    public Customer signUp(Customer newCustumer) {
+    public Customer signUp(Customer newCustomer) {
 
         //chack emal address
-        if (newCustumer.getEmail() == null || !newCustumer.getEmail().contains("@")) {
+        if (newCustomer.getEmail() == null || !newCustomer.getEmail().contains("@")) {
             throw new RuntimeException("Email address not provided!!!");
         }
         // check of custumer exists this email
-        Customer customer = customerRepository.findAllByEmail(newCustumer.getEmail());
+        Customer customer = customerRepository.findAllByEmail(newCustomer.getEmail());
         if (customer != null) {
-            throw new RuntimeException("custumer " + newCustumer.getEmail() + " exists");
+            throw new RuntimeException("custumer " + newCustomer.getEmail() + " exists");
         }
-        newCustumer.setId(UUID.randomUUID().toString());
-        return customerRepository.save(newCustumer);
+        newCustomer.setId(UUID.randomUUID().toString());
+        return customerRepository.save(newCustomer);
     }
 
     public Carrier signUpDriver(Carrier newCarrier) {
