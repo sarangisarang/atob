@@ -2,15 +2,15 @@ package com.atob.atobapp;
 import com.atob.atobapp.domain.TransportOrder;
 import com.atob.atobapp.exceptions.BadRequestException;
 import com.atob.atobapp.repository.*;
+import com.atob.atobapp.security.MyUserDetailsService;
 import com.atob.atobapp.service.OrderService;
 import com.atob.atobapp.service.OrderStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
+import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDate;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
@@ -29,6 +29,8 @@ public class TransporOrderServiceTest {
     private TransportOrderRepository transportOrderRepository;
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private MyUserDetailsService myUserDetailsService;
 
 
     @Test   //  1.1
@@ -165,5 +167,10 @@ public class TransporOrderServiceTest {
         assertEquals(exception.getMessage(), "Can not cencel this order");
 
 
+    }
+    @Test
+    public void Find_all_users(){
+        UserDetails userDetails = myUserDetailsService.loadUserByUsername("admin");
+        assertNotNull(userDetails);
     }
 }
