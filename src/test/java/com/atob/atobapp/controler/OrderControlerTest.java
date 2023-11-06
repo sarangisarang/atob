@@ -9,9 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+
+import java.nio.charset.StandardCharsets;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -29,7 +32,8 @@ class OrderControlerTest {
         transportOrder.setOrderStatus(OrderStatus.Pending);
         transportOrderRepository.save(transportOrder);
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/show/order/{id}/waitingCarrier", TestUtils.DEFAULT_ID))
+        mockMvc.perform(MockMvcRequestBuilders.put("/show/order/{id}/waitingCarrier", TestUtils.DEFAULT_ID)
+                        .header(HttpHeaders.AUTHORIZATION, HttpHeaders.encodeBasicAuth("admin", "1234", StandardCharsets.UTF_8)))
                 .andExpect(MockMvcResultMatchers.status().is(400))
                 .andExpect(MockMvcResultMatchers.content().string("Invaled status"));
     }

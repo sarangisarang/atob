@@ -1,5 +1,4 @@
 package com.atob.atobapp.domain;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Getter;

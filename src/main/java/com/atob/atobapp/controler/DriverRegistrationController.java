@@ -23,9 +23,9 @@ public class DriverRegistrationController {
         return registrationService.signUp(newCustomer);
     }
 
-    @GetMapping("/customers") // 26.10.2023  new show me all Customers
-    public List<Customer> getAllCostumers() {
-        return customerRepository.findAll();
+    @PostMapping("/signUpDriver")
+    public Carrier signUpDriver(@RequestBody Carrier newCarrier) {
+        return registrationService.signUpDriver(newCarrier);
     }
 
     @PutMapping("/customer/{id}") // 26.10.2023 new made this
@@ -33,9 +33,8 @@ public class DriverRegistrationController {
         return registrationService.updateCustomer(customer, id);
     }
 
-    @PostMapping("/signUpDriver")
-    public Carrier signUpDriver(@RequestBody Carrier newCarrier) {
-        return registrationService.signUpDriver(newCarrier);
+    @GetMapping("/customers") // 26.10.2023  new show me all Customers
+    public List<Customer> getAllCostumers() {
+        return customerRepository.findAll();
     }
-
 }

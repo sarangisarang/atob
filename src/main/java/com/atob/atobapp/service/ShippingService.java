@@ -1,5 +1,4 @@
 package com.atob.atobapp.service;
-
 import com.atob.atobapp.domain.Shipping;
 import com.atob.atobapp.repository.ShippmentRepository;
 import lombok.Getter;
@@ -7,7 +6,6 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-
 import java.math.BigDecimal;
 import java.util.UUID;
 
