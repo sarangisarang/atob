@@ -33,7 +33,7 @@ class OrderControlerTest {
         transportOrderRepository.save(transportOrder);
 
         mockMvc.perform(MockMvcRequestBuilders.put("/show/order/{id}/waitingCarrier", TestUtils.DEFAULT_ID)
-                        .header(HttpHeaders.AUTHORIZATION, HttpHeaders.encodeBasicAuth("admin", "1234", StandardCharsets.UTF_8)))
+                        .header(HttpHeaders.AUTHORIZATION, "Basic " + HttpHeaders.encodeBasicAuth("admin", "1234", StandardCharsets.UTF_8)))
                 .andExpect(MockMvcResultMatchers.status().is(400))
                 .andExpect(MockMvcResultMatchers.content().string("Invaled status"));
     }

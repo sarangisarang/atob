@@ -7,4 +7,4 @@ insert into Product (id,product_Name,product_Desc,image1,image2,image3,image4,im
 insert into Transport_Order (id,order_Id,order_No,order_Date,shipping_Date,shippingfrom_id,shippingto_id,Product_id,Customer_id) values ('1','1',10,'2023-10-11','2023-10-11','1','2','1','1');
 insert into Shipping(id,delivery_Start_At,delivery_End_At,carrier_id,order_Id,tracking_Longitude,tracking_Latitude) values ('1','2023-10-11','2023-11-23','1','1',51.23070894321033, 6.7903674740777324);
 insert into Service_User (id, username, password) values ('1', 'admin', '{bcrypt}$2a$10$.jR4BzWbWZCUM3KPXIv9w.lBEZTX39bIUD7.njxDBbuTvTzPweb9K');
-insert into User_Role (id, role_name, user_id) values ('1', 'ADMIN', '1');
+insert into User_Role (id, role_name, user_id) values ('1', 'ROLE_ADMIN', '1');
