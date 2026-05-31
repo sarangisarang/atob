@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'თავისუფალი შეკვეთები', noAvailableOrders: 'ამჟამად თავისუფალი შეკვეთა არ არის', acceptOrder: 'აღება',
   appName: 'ATOB ტრანსპორტი',
 
   login: 'შესვლა', logout: 'გასვლა',

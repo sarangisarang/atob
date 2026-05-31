@@ -62,6 +62,29 @@ public class ShippingService {
         return shippingRepository.save(shipping);
     }
 
+    // Marketplace: a driver claims an unassigned order for themselves.
+    @Transactional
+    public Shipping acceptShipping(String shippingId, String driverEmail) {
+        Shipping shipping = findById(shippingId);
+
+        if (shipping.getCarrier() != null) {
+            throw new BadRequestException("This order has already been taken by another driver");
+        }
+        if (shipping.getShippingStatus() != ShippingStatus.CREATED) {
+            throw new BadRequestException("This order is no longer available");
+        }
+
+        Carrier driver = driverRepository.findAllByEmail(driverEmail);
+        if (driver == null) {
+            throw new BadRequestException("Driver not found: " + driverEmail);
+        }
+
+        shipping.setCarrier(driver);
+        validateAndTransition(shipping, ShippingStatus.ASSIGNED);
+        shipping.setUpdatedAt(LocalDateTime.now());
+        return shippingRepository.save(shipping);
+    }
+
     @Transactional
     public Shipping assignVehicle(String shippingId, String vehicleId) {
         Shipping shipping = findById(shippingId);

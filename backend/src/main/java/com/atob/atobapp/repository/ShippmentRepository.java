@@ -14,6 +14,9 @@ public interface ShippmentRepository extends JpaRepository<Shipping, String> {
     List<Shipping> findAllByCarrierEmail(String email);
     List<Shipping> findAllByCarrierEmail(String email, Pageable pageable);
 
+    // Marketplace: orders not yet taken by any driver (available to claim)
+    List<Shipping> findAllByCarrierIsNullAndShippingStatus(ShippingStatus status, Pageable pageable);
+
     // Customer sees only their own shippings
     List<Shipping> findAllByOrderCustomerEmail(String email);
     List<Shipping> findAllByOrderCustomerEmail(String email, Pageable pageable);

@@ -56,6 +56,9 @@ public class CustomWebSecurityConfiguration {
                         // /api/shippings: all authenticated roles can access list/get
                         // Assignment + create = admin only
                         .requestMatchers(HttpMethod.POST, "/api/shippings").hasRole("ADMIN")
+                        // Marketplace: drivers browse + claim unassigned orders
+                        .requestMatchers(HttpMethod.GET,   "/api/shippings/available").hasAnyRole("DRIVER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/shippings/*/accept").hasAnyRole("DRIVER", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/shippings/*/assign-driver/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/shippings/*/assign-vehicle/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/shippings/*/cancel").hasRole("ADMIN")

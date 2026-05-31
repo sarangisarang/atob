@@ -9,6 +9,8 @@ import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import {
   getAllShippings,
+  getAvailableShippings,
+  acceptShipping,
   updateCoordinates,
   startPickup,
   pickedUp,
@@ -25,9 +27,11 @@ export default function DriverHomeScreen({ navigation }) {
   const [carrierId, setCarrierId] = useState(null);
   const [firstName, setFirstName] = useState('');
   const [shipping,  setShipping]  = useState(null);
+  const [available, setAvailable] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [locating,  setLocating]  = useState(false);
   const [acting,    setActing]    = useState(false);
+  const [accepting, setAccepting] = useState(null);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -45,12 +49,32 @@ export default function DriverHomeScreen({ navigation }) {
       const res = await getAllShippings();
       const mine = (res.data || []).find(s => ACTIVE_STATUSES.includes(s.shippingStatus));
       setShipping(mine || null);
+      // No active job → show the marketplace of unclaimed orders to pick up
+      if (!mine) {
+        const av = await getAvailableShippings().catch(() => ({ data: [] }));
+        setAvailable(av.data || []);
+      } else {
+        setAvailable([]);
+      }
     } catch {
       // silent — empty state shown
     } finally {
       setLoading(false);
     }
   }, [carrierId]);
+
+  const handleAccept = async (id) => {
+    setAccepting(id);
+    try {
+      await acceptShipping(id);
+      await fetchMyShipment();   // claimed order becomes the active job
+    } catch (e) {
+      Alert.alert(t('error'), e.response?.data || t('actionError'));
+      await fetchMyShipment();   // refresh in case another driver took it
+    } finally {
+      setAccepting(null);
+    }
+  };
 
   useFocusEffect(useCallback(() => { fetchMyShipment(); }, [fetchMyShipment]));
 
@@ -116,11 +140,44 @@ L.marker([${lat},${lon}]).addTo(map).bindPopup('📦').openPopup();
         <ActivityIndicator size="large" color="#1a73e8" style={{ marginTop: 40 }} />
       ) : !s ? (
         <ScrollView
-          contentContainerStyle={styles.emptyContainer}
+          contentContainerStyle={styles.availableContent}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchMyShipment} />}
         >
-          <Text style={styles.emptyIcon}>📭</Text>
-          <Text style={styles.emptyText}>{t('noActiveShipment')}</Text>
+          <Text style={styles.availableTitle}>{t('availableOrders')}</Text>
+          {available.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>📭</Text>
+              <Text style={styles.emptyText}>{t('noAvailableOrders')}</Text>
+            </View>
+          ) : (
+            available.map((o) => (
+              <View key={o.id} style={styles.card}>
+                <View style={styles.cardTop}>
+                  <Text style={styles.cardRoute}>
+                    {(o.fromCity || '—')} → {(o.toCity || '—')}
+                  </Text>
+                  {o.transportType && <Text style={styles.cardType}>{o.transportType}</Text>}
+                </View>
+                {(o.fromAddress || o.toAddress) && (
+                  <Text style={styles.cardAddr}>
+                    {o.fromAddress || ''}{o.toAddress ? '  →  ' + o.toAddress : ''}
+                  </Text>
+                )}
+                {o.deliveryEndAt && (
+                  <Text style={styles.cardMeta}>📅 {String(o.deliveryEndAt).slice(0, 10)}</Text>
+                )}
+                <TouchableOpacity
+                  style={[styles.btn, { backgroundColor: '#2E7D32', marginTop: 10 }, accepting && styles.disabled]}
+                  onPress={() => handleAccept(o.id)}
+                  disabled={!!accepting}
+                >
+                  {accepting === o.id
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.btnText}>✅ {t('acceptOrder')}</Text>}
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </ScrollView>
       ) : (
         <View style={styles.flex}>
@@ -213,9 +270,17 @@ const styles = StyleSheet.create({
   header:         { backgroundColor: '#1a73e8', paddingTop: 50, paddingBottom: 18, paddingHorizontal: 20 },
   headerTitle:    { fontSize: 20, fontWeight: '800', color: '#fff' },
   headerSub:      { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
+  emptyContainer: { justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
   emptyIcon:      { fontSize: 60, marginBottom: 16 },
   emptyText:      { fontSize: 16, color: '#aaa', textAlign: 'center' },
+  availableContent: { padding: 16, paddingBottom: 30 },
+  availableTitle: { fontSize: 16, fontWeight: '800', color: '#333', marginBottom: 12 },
+  card:           { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 12, elevation: 2, borderWidth: 1, borderColor: '#EEF1F5' },
+  cardTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardRoute:      { fontSize: 15, fontWeight: '700', color: '#1a1a1a', flex: 1 },
+  cardType:       { fontSize: 11, fontWeight: '700', color: '#1a73e8', backgroundColor: '#E8F0FE', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
+  cardAddr:       { fontSize: 12, color: '#777', marginTop: 4 },
+  cardMeta:       { fontSize: 12, color: '#555', marginTop: 6 },
   map:            { flex: 1, minHeight: 260 },
   panel:          { maxHeight: 360, backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, elevation: 10 },
   panelContent:   { padding: 16, paddingBottom: 28 },

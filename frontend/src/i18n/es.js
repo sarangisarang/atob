@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'Pedidos disponibles', noAvailableOrders: 'No hay pedidos disponibles ahora', acceptOrder: 'Aceptar',
   appName: 'ATOB Transporte',
   login: 'Iniciar sesión', logout: 'Cerrar sesión',
   username: 'Usuario', password: 'Contraseña',

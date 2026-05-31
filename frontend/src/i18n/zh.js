@@ -1,4 +1,5 @@
 export default {
+  availableOrders: '可接订单', noAvailableOrders: '目前没有可接订单', acceptOrder: '接单',
   appName: 'ATOB 运输',
   login: '登录', logout: '退出',
   username: '用户名', password: '密码',

@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'Available orders', noAvailableOrders: 'No available orders right now', acceptOrder: 'Accept',
   appName: 'ATOB Transport',
 
   login: 'Sign In', logout: 'Sign Out',

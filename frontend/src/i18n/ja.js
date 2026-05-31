@@ -1,4 +1,5 @@
 export default {
+  availableOrders: '利用可能な注文', noAvailableOrders: '現在利用可能な注文はありません', acceptOrder: '受ける',
   appName: 'ATOB 輸送',
   login: 'ログイン', logout: 'ログアウト',
   username: 'ユーザー名', password: 'パスワード',

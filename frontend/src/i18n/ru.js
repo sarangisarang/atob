@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'Доступные заказы', noAvailableOrders: 'Сейчас нет доступных заказов', acceptOrder: 'Принять',
   appName: 'ATOB Транспорт',
   login: 'Войти', logout: 'Выйти',
   username: 'Логин', password: 'Пароль',

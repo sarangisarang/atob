@@ -76,6 +76,9 @@ export const cancelOrder       = (id)          => client.put(`/show/order/${id}/
 // ─── Shippings (/api/shippings) ───────────────────────────────────────────────
 
 export const getAllShippings     = ()                      => client.get('/api/shippings');
+// Marketplace: unclaimed orders a driver can take, and the claim action
+export const getAvailableShippings = ()                    => client.get('/api/shippings/available');
+export const acceptShipping        = (id)                  => client.patch(`/api/shippings/${id}/accept`);
 export const getShipping         = (id)                   => client.get(`/api/shippings/${id}`);
 export const createShipping      = (data)                 => client.post('/api/shippings', data);
 

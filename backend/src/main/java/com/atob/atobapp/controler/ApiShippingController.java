@@ -70,6 +70,26 @@ public class ApiShippingController {
         return shippings.stream().map(ShippingResponseDTO::from).toList();
     }
 
+    // ─── Marketplace: available (unclaimed) orders for drivers ────────────────
+
+    @GetMapping("/available")
+    public List<ShippingResponseDTO> available(
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        size = Math.min(size, 100);
+        var pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return shippingRepository
+                .findAllByCarrierIsNullAndShippingStatus(ShippingStatus.CREATED, pageable)
+                .stream().map(ShippingResponseDTO::from).toList();
+    }
+
+    // Driver claims an available order for themselves.
+    @PatchMapping("/{id}/accept")
+    public ShippingResponseDTO accept(@PathVariable String id, Principal principal) {
+        return ShippingResponseDTO.from(shippingService.acceptShipping(id, principal.getName()));
+    }
+
     // ─── Single ───────────────────────────────────────────────────────────────
 
     @GetMapping("/{id}")

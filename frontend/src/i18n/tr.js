@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'Mevcut siparişler', noAvailableOrders: 'Şu anda mevcut sipariş yok', acceptOrder: 'Kabul et',
   appName: 'ATOB Taşımacılık',
   login: 'Giriş Yap', logout: 'Çıkış Yap',
   username: 'Kullanıcı adı', password: 'Şifre',

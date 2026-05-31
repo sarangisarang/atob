@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'Verfügbare Aufträge', noAvailableOrders: 'Derzeit keine verfügbaren Aufträge', acceptOrder: 'Annehmen',
   appName: 'ATOB Transport',
   login: 'Anmelden', logout: 'Abmelden',
   username: 'Benutzername', password: 'Passwort',

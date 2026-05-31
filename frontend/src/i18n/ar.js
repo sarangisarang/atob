@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'الطلبات المتاحة', noAvailableOrders: 'لا توجد طلبات متاحة حاليًا', acceptOrder: 'قبول',
   appName: 'ATOB للنقل',
   login: 'تسجيل الدخول', logout: 'تسجيل الخروج',
   username: 'اسم المستخدم', password: 'كلمة المرور',

@@ -1,4 +1,5 @@
 export default {
+  availableOrders: 'Dostępne zlecenia', noAvailableOrders: 'Brak dostępnych zleceń', acceptOrder: 'Przyjmij',
   appName: 'ATOB Transport',
   login: 'Zaloguj się', logout: 'Wyloguj się',
   username: 'Nazwa użytkownika', password: 'Hasło',
