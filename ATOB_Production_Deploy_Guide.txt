@@ -1,0 +1,514 @@
+═══════════════════════════════════════════════════════════════════
+  ATOB Transport — Production Demo Deployment Guide
+  თარიღი: 2026-05-30
+  სტატუსი: ყველა ფაილი მზადაა — VPS-ზე გაშვება დარჩა
+═══════════════════════════════════════════════════════════════════
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. რა გაკეთდა (Production Deploy Package)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ახლა შექმნილი ფაილები:
+
+  backend/
+    Dockerfile                        ← multi-stage build, non-root user
+    .dockerignore
+    src/main/resources/
+      application-prod.properties     ← env-var based, no seed data
+
+  deploy/
+    docker-compose.prod.yml           ← backend + postgres + nginx + certbot
+    nginx/conf.d/
+      atob.conf                       ← HTTPS reverse proxy
+      atob-init.conf                  ← HTTP-only (certbot init phase)
+    .env.template                     ← template (safe to commit)
+    setup-vps.sh                      ← automated VPS setup
+    backup.sh                         ← daily PostgreSQL backup
+    restore.sh                        ← restore from backup
+    backups/                          ← daily .sql.gz files go here
+
+  scripts/
+    smoke-phase1.sh                   ← updated: 24/24 tests, supports BASE_URL
+
+  .gitignore                          ← deploy/.env excluded
+  DEPLOYMENT_PROD.md                  ← full deployment guide
+  ATOB_Production_Deploy_Guide.txt    ← ეს ფაილი
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. Smoke Test შედეგი
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  24/24 PASS (localhost-ზე ვერიფიცირებული)
+
+  1.  Admin login → 200
+  2.  Driver1 login → 200
+  3.  Driver2 login → 200
+  4.  Customer login → 200
+  5.  Admin sees all shippings
+  6.  Driver1 sees only own shipment
+  7.  Customer sees own shipment
+  8.  Driver2 blocked from Driver1 shipment → blocked
+  9.  Customer2 blocked from Customer1 shipment → blocked
+  10. Admin assigns vehicle + driver → ASSIGNED
+  11. ASSIGNED → PICKUP_IN_PROGRESS
+  12. PICKUP_IN_PROGRESS → PICKED_UP
+  13. PICKED_UP → IN_TRANSIT
+  14. IN_TRANSIT → DELIVERED
+  15. Invalid: ASSIGNED → DELIVERED → blocked
+  16. Terminal: DELIVERED → CANCELLED → blocked
+  17. Driver GPS for own shipment → 200
+  18. GPS rate limit (2nd request <10s) → 429
+  19. Driver blocked from other's GPS
+  20. Customer reads own tracking → 200
+  21. Customer2 blocked from other's tracking
+  22. /api/shippings/by-order/1 → 200
+  23. /api/vehicles?page=0&size=10 → 200
+  24. /api/shippings?page=0&size=5 → list
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. VPS-ზე გასაშვები ნაბიჯები
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1 — VPS შექმნა
+─────────────────────────────────────────────────────────────────
+
+  სამართავი: https://console.hetzner.cloud
+  Plan:       CX22 — 4 vCPU, 4GB RAM — €5/month
+  OS:         Ubuntu 22.04 LTS
+  Region:     Nuremberg (EU) ან Helsinki
+
+  შექმნის შემდეგ:
+  - SERVER_IP-ს ჩაინიშნე
+  - DNS A record: api.your-domain.com → SERVER_IP
+  - DNS propagation: 5–15 წუთი
+
+  Verify DNS:
+    nslookup api.your-domain.com
+
+
+STEP 2 — ფაილების VPS-ზე ატვირთვა
+─────────────────────────────────────────────────────────────────
+
+  ლოკალური machine-იდან:
+
+    scp -r /home/python/Desktop/TrackTransporter/deploy \
+        root@SERVER_IP:/opt/atob-transport/
+
+    scp -r /home/python/Desktop/TrackTransporter/backend \
+        root@SERVER_IP:/opt/atob-transport/
+
+    scp -r /home/python/Desktop/TrackTransporter/scripts \
+        root@SERVER_IP:/opt/atob-transport/
+
+
+STEP 3 — .env კონფიგურაცია სერვერზე
+─────────────────────────────────────────────────────────────────
+
+  ssh root@SERVER_IP
+  cd /opt/atob-transport/deploy
+
+  cp .env.template .env
+  chmod 600 .env
+  nano .env
+
+  შეავსე:
+    DB_NAME=atobapp
+    DB_USER=atob_user
+    DB_PASSWORD=<strong_random_password>
+    API_DOMAIN=api.your-domain.com
+    ALLOWED_ORIGINS=https://your-domain.com
+    JWT_SECRET=<64_char_random_string>
+
+  პაროლის გენერაცია:
+    openssl rand -base64 32    ← DB password
+    openssl rand -hex 64       ← JWT secret
+
+  კრიტიკული: .env ᲐᲠᲐᲡᲝᲓᲔᲡ არ commit-ოს Git-ში!
+
+
+STEP 4 — Automated Setup გაშვება
+─────────────────────────────────────────────────────────────────
+
+  ssh root@SERVER_IP
+
+  bash /opt/atob-transport/deploy/setup-vps.sh \
+      api.your-domain.com \
+      admin@your-email.com
+
+  სკრიპტი აკეთებს:
+  1. Docker + Docker Compose installation
+  2. Firewall (80, 443, SSH)
+  3. HTTP-only config-ით სერვისების გაშვება
+  4. Let's Encrypt SSL certificate მოღება
+  5. HTTPS config-ზე გადართვა
+  6. Daily backup cron (03:00)
+
+  ხანგრძლივობა: ~5–10 წუთი
+
+
+STEP 5 — Manual Setup (თუ automated-ი ვერ მუშაობს)
+─────────────────────────────────────────────────────────────────
+
+  5a. HTTP-only-ით გაშვება:
+    cd /opt/atob-transport/deploy
+    cp nginx/conf.d/atob.conf nginx/conf.d/atob.conf.bak
+    rm nginx/conf.d/atob.conf
+    docker compose -f docker-compose.prod.yml up -d --build
+
+  5b. SSL certificate:
+    docker compose -f docker-compose.prod.yml run --rm certbot \
+        certonly --webroot \
+        -w /var/www/certbot \
+        -d api.your-domain.com \
+        --email admin@your-email.com \
+        --agree-tos --no-eff-email --non-interactive
+
+  5c. HTTPS-ზე გადართვა:
+    mv nginx/conf.d/atob.conf.bak nginx/conf.d/atob.conf
+    rm nginx/conf.d/atob-init.conf
+    sed -i 's/api.YOUR-DOMAIN.com/api.your-domain.com/g' \
+        nginx/conf.d/atob.conf
+    docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+
+
+STEP 6 — Verification
+─────────────────────────────────────────────────────────────────
+
+  # HTTPS health check
+  curl -i https://api.your-domain.com/auth/me
+  # Expected: HTTP 401 (protected — backend is alive)
+
+  # Admin login
+  curl -u "admin:1234" https://api.your-domain.com/auth/me
+  # Expected: {"username":"admin","role":"ADMIN",...}
+
+  # SSL check
+  curl -vI https://api.your-domain.com/auth/me 2>&1 | grep "SSL\|certificate\|expire"
+
+
+STEP 7 — Production Smoke Test
+─────────────────────────────────────────────────────────────────
+
+  # ლოკალური machine-იდან:
+  BASE_URL=https://api.your-domain.com \
+      bash /home/python/Desktop/TrackTransporter/scripts/smoke-phase1.sh
+
+  Required: 24/24 PASS
+  20/24 is NOT acceptable.
+
+
+STEP 8 — Frontend URL Update
+─────────────────────────────────────────────────────────────────
+
+  ფაილი: frontend/src/config.js
+
+    export const API_BASE_URL = 'https://api.your-domain.com';
+
+  მხოლოდ ეს ერთი ფაილი. სხვა ფაილი არ შეიცვლება.
+
+
+STEP 9 — APK Rebuild
+─────────────────────────────────────────────────────────────────
+
+  cd /home/python/Desktop/TrackTransporter/frontend/android
+  ./gradlew assembleRelease
+
+  Output:
+    app/build/outputs/apk/release/app-release.apk
+
+  Serve for download:
+    cd app/build/outputs/apk/release
+    python3 -m http.server 9091
+    # open: http://YOUR_IP:9091/app-release.apk
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. Backup — Daily კოპია
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Manual backup:
+  bash /opt/atob-transport/deploy/backup.sh
+
+  შედეგი:
+    /opt/atob-transport/deploy/backups/atobapp_2026-05-30.sql.gz
+
+List backups:
+  ls -lh /opt/atob-transport/deploy/backups/
+
+Restore from backup:
+  bash /opt/atob-transport/deploy/restore.sh \
+      /opt/atob-transport/deploy/backups/atobapp_2026-05-30.sql.gz
+
+  (asks for "yes" confirmation — drops DB and restores)
+
+Automatic cron (03:00 daily):
+  0 3 * * * /opt/atob-transport/deploy/backup.sh >> /var/log/atob-backup.log 2>&1
+
+Retention: 14 days (older files auto-deleted)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. Docker Commands (VPS-ზე)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  cd /opt/atob-transport/deploy
+
+  # ყველა სერვისის გაშვება
+  docker compose -f docker-compose.prod.yml up -d
+
+  # გაჩერება
+  docker compose -f docker-compose.prod.yml down
+
+  # Logs
+  docker compose -f docker-compose.prod.yml logs -f backend
+  docker compose -f docker-compose.prod.yml logs -f nginx
+
+  # Backend restart only
+  docker compose -f docker-compose.prod.yml restart backend
+
+  # Code change-ის შემდეგ rebuild
+  docker compose -f docker-compose.prod.yml up -d --build backend
+
+  # Container status
+  docker compose -f docker-compose.prod.yml ps
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. Rollback
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DB rollback:
+  bash /opt/atob-transport/deploy/restore.sh \
+      /opt/atob-transport/deploy/backups/atobapp_YYYY-MM-DD.sql.gz
+
+Code rollback:
+  docker compose -f docker-compose.prod.yml down
+  git checkout <previous-commit>
+  docker compose -f docker-compose.prod.yml up -d --build
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. Docker Compose Services
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  postgres
+    image: postgres:15-alpine
+    volume: pgdata (persistent)
+    network: internal only (not exposed publicly)
+    healthcheck: pg_isready
+
+  backend
+    build: backend/Dockerfile (multi-stage)
+    env: SPRING_PROFILES_ACTIVE=prod + DB vars
+    depends_on: postgres (healthy)
+    network: internal only
+    port: 8080 (internal)
+
+  nginx
+    image: nginx:1.25-alpine
+    ports: 80:80, 443:443 (public)
+    volumes: conf.d, certbot certs, acme challenge
+    networks: internal + external
+
+  certbot
+    auto-renewal every 12 hours
+    volumes: same certbot dirs as nginx
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. application-prod.properties
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  spring.datasource.url=jdbc:postgresql://${DB_HOST:postgres}:5432/${DB_NAME}
+  spring.datasource.username=${DB_USER}
+  spring.datasource.password=${DB_PASSWORD}
+  spring.jpa.hibernate.ddl-auto=validate
+  spring.jpa.open-in-view=false
+  spring.flyway.locations=classpath:db/migration   ← no seed data!
+  spring.sql.init.mode=never
+  logging.level.root=WARN
+
+  განსხვავება dev-ისგან:
+  - DB host არის "postgres" (Docker service name)
+  - Seed data არ ჩაიტვირთება (db/dev გამოტოვებულია)
+  - Hibernate validate mode (არ ქმნის ცხრილებს)
+  - Credentials env-var-ებიდან
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. Nginx Config
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  HTTP (port 80):
+    /.well-known/acme-challenge/ → /var/www/certbot
+    / → 301 redirect to HTTPS
+
+  HTTPS (port 443):
+    SSL: TLSv1.2, TLSv1.3
+    Headers: HSTS, X-Frame-Options, X-Content-Type-Options
+    Max upload: 20MB
+    proxy_pass: http://backend:8080
+    Timeout: 30s
+
+  Headers forwarded to backend:
+    Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. .env Variables (სრული სია)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  DB_NAME=atobapp
+  DB_USER=atob_user
+  DB_PASSWORD=<min 32 chars, random>
+  API_DOMAIN=api.your-domain.com
+  ALLOWED_ORIGINS=https://your-domain.com
+  JWT_SECRET=<64 hex chars, for future JWT>
+
+  generate:
+    openssl rand -base64 32    → DB_PASSWORD
+    openssl rand -hex 64       → JWT_SECRET
+
+  NEVER commit .env to Git
+  .gitignore already excludes deploy/.env
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Definition of Done (Task Checklist)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✅ VPS setup automated (setup-vps.sh)
+  ✅ docker-compose.prod.yml — 4 services
+  ✅ Nginx HTTPS reverse proxy
+  ✅ Let's Encrypt SSL + auto-renewal
+  ✅ PostgreSQL persistent volume
+  ✅ .env.template (no secrets committed)
+  ✅ .gitignore (deploy/.env excluded)
+  ✅ application-prod.properties (env-var based)
+  ✅ Dockerfile (multi-stage, non-root user)
+  ✅ backup.sh (daily gzip, 14-day retention)
+  ✅ restore.sh (with confirmation prompt)
+  ✅ DEPLOYMENT_PROD.md (complete guide)
+  ✅ smoke-phase1.sh → 24/24 PASS locally
+
+  დარჩა VPS-ზე:
+  □ VPS შეძენა (Hetzner €5/month)
+  □ DNS A record დაყენება
+  □ setup-vps.sh გაშვება
+  □ 24/24 smoke test production URL-ზე
+  □ APK rebuild production URL-ით
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. Failure Conditions (ამ task-ი ჩაითვლება ჩაგდებულად თუ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ❌ App ჯერ კიდევ localhost.run-ზე დამოკიდებულია
+  ❌ HTTPS არ არის
+  ❌ DB data კონტეინერის restart-ზე ქრება
+  ❌ smoke-phase1.sh 24/24 არ გადის production-ზე
+  ❌ GPS endpoint-ი 429-ს არ აბრუნებს
+  ❌ Driver სხვა driver-ის shipment-ს ხედავს
+  ❌ Customer სხვა customer-ის shipment-ს ხედავს
+  ❌ Secrets hardcoded-ია
+  ❌ Backup არ არსებობს
+  ❌ ახალი features დაემატა deployment-ის მაგივრად
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. Known Limitations (Production-ში)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  GPS Rate Limiter (TrackingRateLimiter):
+    - In-memory ConcurrentHashMap
+    - Resets on backend restart
+    - Acceptable for demo
+    - Production fix: Redis-backed Bucket4j
+
+  Basic Auth:
+    - Credentials sent on every request
+    - Acceptable for demo
+    - Production fix: JWT with refresh tokens
+
+  Seed data (production):
+    - application-prod.properties-ში seed არ ჩაიტვირთება
+    - პირველი admin user ხელით უნდა შეიქმნას:
+      INSERT INTO service_user (id, username, password)
+      VALUES (gen_random_uuid(), 'admin',
+        '{bcrypt}$2a$10$.jR4BzWbWZCUM3KPXIv9w.lBEZTX39bIUD7.njxDBbuTvTzPweb9K');
+      INSERT INTO user_role (id, role_name, user_id)
+      VALUES (gen_random_uuid(), 'ROLE_ADMIN', <user_id>);
+    - ან prod-ისთვის ცალკე seed migration შექმნა
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. Quick Command Reference
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # VPS setup (one-time)
+  bash /opt/atob-transport/deploy/setup-vps.sh api.domain.com email@mail.com
+
+  # Start all services
+  docker compose -f docker-compose.prod.yml up -d
+
+  # View backend logs
+  docker compose -f docker-compose.prod.yml logs -f backend
+
+  # Manual backup
+  bash /opt/atob-transport/deploy/backup.sh
+
+  # Restore backup
+  bash /opt/atob-transport/deploy/restore.sh backups/atobapp_2026-05-30.sql.gz
+
+  # Production smoke test
+  BASE_URL=https://api.domain.com bash scripts/smoke-phase1.sh
+
+  # Rebuild backend (after code change)
+  docker compose -f docker-compose.prod.yml up -d --build backend
+
+  # SSL renewal (manual)
+  docker compose -f docker-compose.prod.yml run --rm certbot renew
+
+  # APK build
+  cd frontend/android && ./gradlew assembleRelease
+
+  # Reset DB (dev/staging only — DESTROYS DATA)
+  docker exec atob-postgres psql -U atob_user -c \
+    "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. After Production Deploy — Next Priorities
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  (მხოლოდ production deploy დასრულების შემდეგ)
+
+  Phase 2 Features (priority order):
+  1. Push Notifications (Firebase FCM)
+     - Shipping assigned → driver notification
+     - Status change → customer notification
+
+  2. Proof of Delivery (POD)
+     - Photo upload at delivery
+     - Receiver name + signature
+     - S3/Cloudflare R2 storage
+
+  3. Web Admin Dashboard (Next.js)
+     - Office admin — desktop interface
+
+  Architecture Debt (parallel):
+  - JWT auth (replace HTTP Basic)
+  - Carrier → Company/Driver refactor
+  - Redis for rate limiting
+  - Pagination cursor-based (for >1000 records)
+
+
+═══════════════════════════════════════════════════════════════════
+  END OF DOCUMENT
+  Smoke test: 24/24 PASS (localhost)
+  Production smoke test: pending VPS deploy
+  Last updated: 2026-05-30
+═══════════════════════════════════════════════════════════════════

@@ -1,0 +1,489 @@
+<!DOCTYPE html><html lang="ka"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATOB / TrackTransporter — ბიზნეს ლოგიკა</title><style>
+@page { size: A4; margin: 18mm 16mm; }
+* { box-sizing: border-box; }
+body { font-family: "Noto Sans Georgian","DejaVu Sans","Segoe UI",Arial,sans-serif;
+  line-height:1.55; color:#1a1a1a; max-width:900px; margin:0 auto; padding:24px; font-size:14px; }
+h1 { font-size:26px; color:#0a7a5a; border-bottom:3px solid #0a7a5a; padding-bottom:10px; }
+h2 { font-size:20px; color:#0a7a5a; margin-top:32px; border-bottom:1px solid #d8e8e2; padding-bottom:5px; }
+h3 { font-size:15px; color:#114; }
+blockquote { border-left:4px solid #0a7a5a; background:#f3faf7; margin:12px 0; padding:8px 14px; color:#335; }
+blockquote p { margin:4px 0; }
+code { background:#eef3f1; padding:1px 5px; border-radius:4px; font-family:"DejaVu Sans Mono",Consolas,monospace; font-size:12.5px; }
+pre { background:#1e2a26; color:#e8f5ef; padding:14px 16px; border-radius:8px; overflow-x:auto; }
+pre code { background:none; color:inherit; padding:0; font-size:12.5px; line-height:1.4; }
+table { border-collapse:collapse; width:100%; margin:14px 0; font-size:13px; }
+th,td { border:1px solid #cfe0d9; padding:7px 10px; text-align:left; vertical-align:top; }
+th { background:#0a7a5a; color:#fff; font-weight:600; }
+tr:nth-child(even) td { background:#f5faf8; }
+hr { border:none; border-top:1px solid #dde; margin:26px 0; }
+strong { color:#063; }
+ul,ol { padding-left:22px; } li { margin:3px 0; }
+</style></head>
+<body><h1 id="atob-tracktransporter">ATOB / TrackTransporter — სრული ბიზნეს ლოგიკა</h1>
+<blockquote>
+<p>საგზაო ტვირთგადაზიდვის მართვის სისტემა (Road Freight SaaS) — კოდიდან ამოწერილი დოკუმენტი
+<strong>Stack:</strong> Spring Boot + PostgreSQL (Flyway) · React Native (Expo) · HTTP Basic Auth</p>
+</blockquote>
+<hr />
+<h2 id="1">1. რა არის აპლიკაცია</h2>
+<p>საგზაო ტვირთგადაზიდვის (road freight) მართვის სისტემა — Amazon Relay-ის სტილის.</p>
+<p><strong>ნაკადი:</strong></p>
+<ul>
+<li><strong>მომხმარებელი (Customer)</strong> ათვალიერებს პროდუქტებს და აკეთებს ტრანსპორტირების შეკვეთას</li>
+<li><strong>ადმინი (Admin)</strong> ამუშავებს შეკვეთას ეტაპობრივად და ანიჭებს მძღოლს</li>
+<li><strong>მძღოლი (Driver/Carrier)</strong> ფიზიკურად აწვდის ტვირთს და track-ავს ლოკაციას GPS-ით</li>
+<li>შეკვეთის გადაცემისას <strong>ავტომატურად იხსნება ჩატი</strong> მომხმარებელსა და მძღოლს შორის</li>
+</ul>
+<hr />
+<h2 id="2-roles">2. მონაწილეები (Roles)</h2>
+<p>სამი როლი, ინახება <code>UserRole</code>-ში <code>ROLE_</code> პრეფიქსით:</p>
+<table>
+<thead>
+<tr>
+<th>როლი</th>
+<th>ვინ არის</th>
+<th>ძირითადი უფლებები</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ADMIN</strong></td>
+<td>ოპერატორი/დისპეტჩერი</td>
+<td>ყველა write-ოპერაცია: სტატუსები, მძღოლის მინიჭება, პროდუქტი/ლოკაცია, სტატისტიკა</td>
+</tr>
+<tr>
+<td><strong>CUSTOMER</strong></td>
+<td>ტვირთის მფლობელი</td>
+<td>შეკვეთის შექმნა, საკუთარი შეკვეთების ნახვა, ჩატი</td>
+</tr>
+<tr>
+<td><strong>DRIVER</strong> (Carrier)</td>
+<td>მძღოლი</td>
+<td>shipping-ის pickup/deliver, GPS tracking, ჩატი</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ავთენტიფიკაცია:</strong> Spring Security HTTP Basic.
+<code>ServiceUser</code> — ცალკე entity credentials-ისთვის (<code>username</code>=email, <code>password</code>=<code>{noop}plaintext</code> ან <code>{bcrypt}hash</code>). Customer/Carrier ცალკე ბიზნეს-entity-ებია, დაკავშირებული <strong>email-ით</strong> (არა FK-ით).</p>
+<hr />
+<h2 id="3">3. დომენის მოდელი</h2>
+<pre><code>Customer ──&lt; TransportOrder &gt;── Product ──&gt; Carrier (მფლობელი მძღოლი)
+                  │  │
+       shippingFrom  shippingTo  ──&gt; Location
+                  │
+            (1:1) Shipping ──&gt; Carrier (მინიჭებული მძღოლი)
+                  │
+            ChatConversation ──&lt; Message
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>აღწერა</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TransportOrder</strong></td>
+<td>შეკვეთა: <code>OrderStatus</code>, customer, product, from/to, orderDate, shippingDate, deliveredDate</td>
+</tr>
+<tr>
+<td><strong>Shipping</strong></td>
+<td>ფიზიკური მიწოდება (1:1 order-თან, <code>order_id</code> UNIQUE): <code>CarrierStatus</code>, carrier, GPS <code>numeric(50,20)</code></td>
+</tr>
+<tr>
+<td><strong>Product</strong></td>
+<td>მარაგი (<code>Stock</code>=BigInteger), სურათები BYTEA (image1 აქტიური, 2-6 რეზერვი), imageUrl fallback</td>
+</tr>
+<tr>
+<td><strong>Customer / Carrier</strong></td>
+<td>id, email, firstName, lastName, password, address, postcode, city, phone (postcode/phone = String)</td>
+</tr>
+<tr>
+<td><strong>Location</strong></td>
+<td>id, address, postcode (Integer), city, phone (Integer)</td>
+</tr>
+<tr>
+<td><strong>ChatConversation</strong></td>
+<td>ერთ shipping-ზე ერთი ჩატი (<code>shipping_id</code> UNIQUE), customerId, driverId, active</td>
+</tr>
+<tr>
+<td><strong>Message</strong></td>
+<td>senderId, senderRole (CUSTOMER/DRIVER), content (≤2000), sentAt, read</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4">4. რეგისტრაცია &amp; ავტორიზაცია</h2>
+<p><code>RegistrationService.java</code> — <strong>Customer / Driver signup</strong> (ერთი ლოგიკა):</p>
+<ol>
+<li>ვალიდაცია: email უნდა შეიცავდეს <code>@</code>; password აუცილებელია</li>
+<li>დუბლიკატის შემოწმება email-ით</li>
+<li>იქმნება ბიზნეს-entity (Customer/Carrier) UUID-ით</li>
+<li><strong>პარალელურად</strong> იქმნება <code>ServiceUser</code> (login) + <code>UserRole</code>:
+   - Customer → <code>ROLE_CUSTOMER</code>
+   - Driver → <code>ROLE_DRIVER</code></li>
+<li>პაროლი ინახება <code>{noop}</code> პრეფიქსით (plaintext — dev რეჟიმი)</li>
+</ol>
+<p><strong>ADMIN</strong> ჩაშენებულია seed-ში (<code>{bcrypt}</code>); რეგისტრაციით ვერ შექმნი.
+<code>/auth/me</code> (<code>AuthController</code>) — აბრუნებს role + customerId/carrierId-ს frontend-ისთვის.</p>
+<blockquote>
+<p>⚠️ <strong>რისკი:</strong> <code>updateCustomer</code> პაროლს <code>{noop}</code>-ის გარეშე ინახავს → შემდეგი login დაიმტვრევა.</p>
+</blockquote>
+<hr />
+<h2 id="5-state-machine">5. შეკვეთის სასიცოცხლო ციკლი (State Machine) ⭐</h2>
+<p><code>OrderService.java</code> — <code>OrderStatus</code>: <code>Pending → Processing → WaitingCarrier → Shipped → Delivered</code> (+ <code>Cancelled</code>).
+გადასვლები <strong>მკაცრად</strong> კონტროლდება — ეტაპს ვერ გადახტები:</p>
+<pre><code>Pending ──(processing)──&gt; Processing ──(waitingCarrier)──&gt; WaitingCarrier
+   │                                                            │
+   │(cancel)                                       (shipped: carrier required)
+   ▼                                                            ▼
+Cancelled                                    Shipped ──(delivered)──&gt; Delivered
+</code></pre>
+<p><strong>1. შექმნა — <code>newOrders()</code> — <code>POST /show/order/{customerId}</code></strong>
+- UUID, <code>OrderStatus.Pending</code>, <code>orderDate = დღეს</code>; Customer უნდა არსებობდეს
+- <strong>Stock ვალიდაცია:</strong> პროდუქტი უნდა იყოს მარაგში (<code>&gt; 0</code>) → წარმატებისას <strong>−1</strong>, თუ არა → "out of stock"
+- <code>shippingDate</code> წარსულში ვერ იქნება</p>
+<p><strong>2. რედაქტირება — <code>updateOrder()</code></strong> — მხოლოდ <code>Pending</code>; თარიღების ვალიდაცია (shipping ≥ order, delivered ≥ shipping)</p>
+<p><strong>3. სტატუსის გადასვლები</strong> (თითო ამოწმებს წინა სტატუსს):</p>
+<table>
+<thead>
+<tr>
+<th>გადასვლა</th>
+<th>პირობა</th>
+<th>side-effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>→ Processing</td>
+<td><code>Pending</code>-დან</td>
+<td>—</td>
+</tr>
+<tr>
+<td>→ WaitingCarrier</td>
+<td><code>Processing</code>-დან</td>
+<td><strong>ავტომატურად იქმნება Shipping</strong> (Assigned, deliveryStartAt=დღეს)</td>
+</tr>
+<tr>
+<td>→ Shipped</td>
+<td><code>WaitingCarrier</code>-დან</td>
+<td><strong>Shipping + carrier უნდა იყოს</strong>; shippingDate=დღეს</td>
+</tr>
+<tr>
+<td>→ Delivered</td>
+<td><code>Shipped</code>-დან</td>
+<td>deliveredDate=დღეს</td>
+</tr>
+</tbody>
+</table>
+<p><strong>4. გაუქმება — <code>cancelOrder()</code></strong> — მხოლოდ <code>Pending</code>; <strong>მარაგი ბრუნდება +1</strong></p>
+<p><strong>კითხვა/ძებნა:</strong> <code>/show/orders?status=</code> · <code>/show/orders/search?q=</code> · <code>/show/orders/my</code> · <code>/show/stats</code> (ADMIN)</p>
+<hr />
+<h2 id="6-shipping-backend">6. Shipping &amp; მძღოლის ლოგიკა (backend)</h2>
+<p><code>ShippingService.java</code> — <code>CarrierStatus</code>: <code>Assigned → PickedUp → Delivered</code>.</p>
+<p><strong>მძღოლის მინიჭება — <code>assignCarrier()</code></strong> (<code>@Transactional</code>, ADMIN):
+1. Shipping და Carrier უნდა არსებობდეს
+2. <strong>ერთი მძღოლი = ერთი აქტიური მიწოდება:</strong> თუ მძღოლს აქვს არა-<code>Delivered</code> shipment → "already assigned to an active shipment"
+3. ენიჭება carrier, <code>Assigned</code>
+4. <strong>ავტომატურად იქმნება ChatConversation</strong> (customer ↔ driver)</p>
+<ul>
+<li><strong>Pickup</strong> — carrier მინიჭებული + <code>Assigned</code> → <code>PickedUp</code></li>
+<li><strong>Deliver</strong> — <code>PickedUp</code> → <code>Delivered</code></li>
+<li><strong>GPS Tracking</strong> — <code>PUT /shipping/tracking/{id}/{lat}/{lng}</code></li>
+<li><strong>updateShipping</strong> — მასობრივი update მხოლოდ <code>PickedUp</code>-ზე</li>
+</ul>
+<blockquote>
+<p>Order-ისა და Shipping-ის სტატუსები <strong>ცალ-ცალკეა</strong> და ხელით უნდა იყოს სინქრონში.</p>
+</blockquote>
+<hr />
+<h2 id="7">7. ჩატის სისტემა</h2>
+<p><code>ChatServiceImpl.java</code></p>
+<ul>
+<li><strong>მონაწილის ამოცნობა (<code>resolve</code>):</strong> email-ით ვადგენთ Customer-ია თუ Carrier; ვერცერთი → <code>ForbiddenException</code></li>
+<li><strong>წვდომა:</strong> მომხმარებელი ხედავს მხოლოდ თავის conversation-ებს; უცხო ჩატზე → 403</li>
+<li><strong><code>sendMessage</code>:</strong> არა ცარიელი, max 2000 სიმბ.; ანახლებს <code>updatedAt</code>-ს</li>
+<li><strong>წაკითხვა:</strong> ჩატვირთვისას ავტომატურად <code>read=true</code> (გამგზავნის გარდა); <code>unreadCount</code> თვლის წაუკითხავებს</li>
+<li><strong>იდემპოტენტური შექმნა:</strong> raw JDBC <code>INSERT ... ON CONFLICT (shipping_id) DO NOTHING</code> — race-safe, ერთ shipping-ზე ერთი ჩატი</li>
+</ul>
+<hr />
+<h2 id="8">8. ავტორიზაციის მატრიცა</h2>
+<p><code>CustomWebSecurityConfiguration.java</code> — HTTP Basic, CSRF off, CORS ღია (<code>*</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>წვდომა</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/register/signUp*</code></td>
+<td>public</td>
+</tr>
+<tr>
+<td><code>GET /products/*/image</code></td>
+<td>public (UUID-ით)</td>
+</tr>
+<tr>
+<td><code>/auth/me</code>, <code>/chat/**</code></td>
+<td>ნებისმიერი authenticated</td>
+</tr>
+<tr>
+<td><code>POST /show/order/**</code></td>
+<td>ADMIN, CUSTOMER</td>
+</tr>
+<tr>
+<td><code>GET /show/orders/my</code></td>
+<td>CUSTOMER</td>
+</tr>
+<tr>
+<td><code>GET /show/order(s)/**</code>, <code>/shipping/**</code></td>
+<td>ADMIN, DRIVER</td>
+</tr>
+<tr>
+<td><code>GET /show/stats</code>, <code>/register/customers</code></td>
+<td>ADMIN only</td>
+</tr>
+<tr>
+<td><code>PUT /shipping/*/pickup</code>, <code>/deliver</code>, <code>/tracking/**</code></td>
+<td>ADMIN, DRIVER</td>
+</tr>
+<tr>
+<td>სხვა <code>POST/PUT/DELETE</code> (show, products, locations, assign, register)</td>
+<td>ADMIN only</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-entity-">9. დამხმარე entity-ები</h2>
+<ul>
+<li><strong>Product</strong> (<code>ProductController</code>): CRUD (ADMIN), stock ნეგატიური ვერ იქნება, სურათის upload (≤15MB) + public serve (cache 24სთ)</li>
+<li><strong>Location:</strong> CRUD ლოკაციებზე (from/to მისამართები)</li>
+</ul>
+<hr />
+<h2 id="10">10. ვალიდაცია &amp; შეცდომები</h2>
+<p><code>ExceptionControllerAdvice.java</code> — ერთიანი <code>ApiErrorDTO</code> (status/error/message/path/timestamp):</p>
+<table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>HTTP</th>
+<th>მნიშვნელობა</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BadRequestException</code></td>
+<td>400</td>
+<td>ბიზნეს-წესის დარღვევა</td>
+</tr>
+<tr>
+<td><code>ForbiddenException</code></td>
+<td>403</td>
+<td>ჩატის წვდომა</td>
+</tr>
+<tr>
+<td>სხვა <code>Exception</code></td>
+<td>500</td>
+<td>message იმალება, ლოგში სრული stack</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-frontend-react-native-expo">11. Frontend ლოგიკა (React Native / Expo)</h2>
+<p>საქაღალდე: <code>frontend/src/</code> (<code>atob-frontend</code>). ფაილები <strong><code>.js</code></strong> (არა TypeScript). <code>App.js</code> → <code>LanguageProvider</code> → <code>NavigationContainer</code> → <code>AppNavigator</code>.</p>
+<h3 id="111-api-apiclientjs-configjs">11.1 API ფენა — <code>api/client.js</code> + <code>config.js</code></h3>
+<ul>
+<li>Axios instance, <code>baseURL = API_BASE_URL</code>, timeout 10წმ</li>
+<li><code>config.js</code>-ში <code>API_BASE_URL</code> ამჟამად <strong>ngrok tunnel URL</strong>-ია (<code>https://….ngrok-free.app</code>) — single source of truth; tunnel-ის restart-ზე იცვლება ერთ ხაზში, prod-ში → <code>https://your-domain.com</code></li>
+<li>ყველა request-ს ემატება header <code>ngrok-skip-browser-warning: true</code></li>
+<li><strong>request interceptor</strong> — AsyncStorage-დან იღებს <code>authToken</code>-ს და ურთავს <code>Authorization: Basic &lt;token&gt;</code></li>
+<li><strong>response interceptor</strong> — <code>401</code>-ზე ასუფთავებს credential-ებს (<code>authToken</code>, <code>userRole</code>, <code>carrierId</code>, <code>customerId</code>, …)</li>
+<li><code>login()</code> — RN-safe <strong>custom base64</strong> encoder → ინახავს <code>authToken</code>-ს → <code>GET /auth/me</code></li>
+<li>API ჯგუფები: <strong>Orders</strong> (<code>/show/…</code>), <strong>Shippings</strong> (<code>/api/shippings/…</code>), <strong>Products</strong>, <strong>Locations</strong>, <strong>Customers/Drivers</strong>, <strong>Registration</strong> (public, raw axios), <strong>Chat</strong> (<code>/chat/…</code>)</li>
+</ul>
+<h3 id="112-appjs-context-">11.2 ავთენტიფიკაცია — <code>App.js</code> (Context-ის გარეშე)</h3>
+<ul>
+<li><code>AppNavigator</code> გაშვებისას კითხულობს AsyncStorage-ს <code>['authToken','userRole']</code> → ირჩევს initial route-ს: <code>Login</code> / <code>Main</code> (admin) / <code>DriverMain</code> / <code>CustomerMain</code></li>
+<li><code>LoginScreen</code>: <code>login()</code> + <code>getMe()</code> → ინახავs <code>userRole</code>, <code>carrierId</code>, <code>customerId</code>, <code>firstName</code>, <code>lastName</code> → <code>navigation.replace(dest)</code> როლის მიხედვით</li>
+<li>logout: <code>AsyncStorage.multiRemove([...])</code></li>
+</ul>
+<h3 id="113-i18n-i18nindexjs">11.3 მრავალენოვნება (i18n) — <code>i18n/index.js</code> ⭐</h3>
+<ul>
+<li><strong>17 ენა:</strong> ka (ნაგულისხმევი 🇬🇪), en, ru, de, tr, fr, es, ar, zh, it, pt, uk, pl, nl, ro, ja, ko</li>
+<li><code>LanguageProvider</code> + <code>useTranslation()</code> → <code>t('a.b.c')</code> წერტილოვანი key-ებით; key ვერ მოიძებნა → თავად key ბრუნდება</li>
+<li>არჩეული ენა ინახება AsyncStorage-ში (<code>appLang</code>)</li>
+<li>ენის გადართვა: <code>SettingsScreen</code> (სრული სია)</li>
+</ul>
+<h3 id="114-appjs">11.4 როლზე დაფუძნებული ნავიგაცია — <code>App.js</code></h3>
+<p>ერთი root <code>Stack</code>, თითო როლს <strong>ცალკე Bottom-Tab ხე</strong> აქვს:</p>
+<table>
+<thead>
+<tr>
+<th>როლი</th>
+<th>Tabs</th>
+<th>სტეკები</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>არა-ავტორიზებული</strong></td>
+<td>—</td>
+<td>Login → RegisterType → RegisterForm</td>
+</tr>
+<tr>
+<td><strong>ADMIN</strong> (<code>Main</code>)</td>
+<td>Dashboard · Orders · Products · Drivers · Settings</td>
+<td>Orders→(OrdersList, OrderDetail, GPSTracking, CreateOrder); Products→(ProductsList, ProductForm)</td>
+</tr>
+<tr>
+<td><strong>DRIVER</strong> (<code>DriverMain</code>)</td>
+<td>DriverHome · Messages · Settings</td>
+<td>Chat→(ConversationList, ChatThread)</td>
+</tr>
+<tr>
+<td><strong>CUSTOMER</strong> (<code>CustomerMain</code>)</td>
+<td>Shop · MyOrders · Messages · Settings</td>
+<td>Shop→(CustomerShop, CustomerOrderForm, CustomerOrders); Chat→(ConversationList, ChatThread)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="115">11.5 ძირითადი ეკრანები</h3>
+<table>
+<thead>
+<tr>
+<th>ეკრანი</th>
+<th>ლოგიკა</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LoginScreen</strong></td>
+<td>username/password → <code>login</code>+<code>/auth/me</code> → role-ით redirect; register link</td>
+</tr>
+<tr>
+<td><strong>RegisterType → RegisterForm</strong></td>
+<td>customer/driver არჩევა → 8-ველიანი ფორმა → <code>signUpCustomer/Driver</code> (public) → Login; ამუშავებს "already exists"</td>
+</tr>
+<tr>
+<td><strong>DashboardScreen</strong> (ADMIN)</td>
+<td><code>getStats()</code> + <code>getOrders()</code> → 7 stat-ბარათი + ბოლო შეკვეთები; pull-to-refresh</td>
+</tr>
+<tr>
+<td><strong>OrdersListScreen</strong> (ADMIN/DRIVER)</td>
+<td>სტატუს-ფილტრის chip-ები + debounced ძებნა; FAB→CreateOrder (admin); → OrderDetail</td>
+</tr>
+<tr>
+<td><strong>OrderDetailScreen</strong> ⭐</td>
+<td><code>ACTION_KEYS</code> state machine (Pending→processing/cancel · Processing→waitingCarrier · WaitingCarrier→shipped · Shipped→delivered); <strong>მძღოლის მინიჭების modal</strong> (<code>getDrivers</code>→<code>assignCarrier</code>); Track GPS; confirm dialog</td>
+</tr>
+<tr>
+<td><strong>DriverHomeScreen</strong> (DRIVER)</td>
+<td><code>getAllShippings()</code> → აქტიური shipment; <strong>Leaflet რუკა (WebView)</strong>; ნამდვილი GPS (<code>expo-location</code>) → <code>updateCoordinates</code>; გადასვლები startPickup→pickedUp→inTransit→deliver; auto-refresh 15წმ აქტიურზე</td>
+</tr>
+<tr>
+<td><strong>GPSTrackingScreen</strong></td>
+<td>Leaflet WebView რუკა; "ჩემი ლოკაცია" (expo-location); იგივე გადასვლები; default თბილისი (41.6938, 44.8015)</td>
+</tr>
+<tr>
+<td><strong>CustomerShopScreen</strong> (CUSTOMER)</td>
+<td><code>getProducts()</code> ბადედ, სურათი <code>/products/{id}/image</code>; out-of-stock დაბლოკილი; tap → CustomerOrderForm</td>
+</tr>
+<tr>
+<td><strong>CustomerOrderFormScreen</strong></td>
+<td><code>getLocations()</code> → from/to + date → <code>createOrder(customerId, {product, shippingFrom, shippingTo})</code></td>
+</tr>
+<tr>
+<td><strong>CustomerOrdersScreen</strong></td>
+<td><code>getMyOrders()</code> (<code>/show/orders/my</code>)</td>
+</tr>
+<tr>
+<td><strong>CreateOrderScreen</strong> (ADMIN)</td>
+<td>4-ნაბიჯიანი wizard: customer → product → route → confirm → <code>createOrder</code></td>
+</tr>
+<tr>
+<td><strong>ProductsScreen / ProductFormScreen</strong> (ADMIN)</td>
+<td>CRUD + სურათის upload (<code>expo-image-picker</code>: გალერეა/კამერა)</td>
+</tr>
+<tr>
+<td><strong>DriversScreen</strong> (ADMIN)</td>
+<td><code>getDrivers()</code> სია (avatar, contact)</td>
+</tr>
+<tr>
+<td><strong>ChatConversationListScreen / ChatContactsScreen</strong></td>
+<td><code>getChatConversations()</code>; avatar, ბოლო მესიჯი, <strong>unread badge</strong> → ChatThread</td>
+</tr>
+<tr>
+<td><strong>ChatThreadScreen</strong></td>
+<td><strong>polling 5წმ</strong>; <code>sendChatMessage</code>; bubble <code>mine</code>/<code>theirs</code>; auto-scroll; maxLength 1000</td>
+</tr>
+<tr>
+<td><strong>StatusBadge</strong> (component)</td>
+<td>ფერადი ჭდე: ORDER + SHIPPING (extended) + legacy carrier mapping</td>
+</tr>
+</tbody>
+</table>
+<h3 id="116-frontend-backend">11.6 ⚠️ Frontend ↔ Backend შეუსაბამობები (დაკვირვებები)</h3>
+<ol>
+<li><strong>Shipping API:</strong> frontend იძახებs <code>/api/shippings/**</code>-ს გაფართოებული სტატუსებით (<code>CREATED, ASSIGNED, PICKUP_IN_PROGRESS, PICKED_UP, IN_TRANSIT, DELIVERED, CANCELLED, FAILED</code>), მაგრამ <code>/home/python/src</code>-ის backend აწვდის <code>/shipping/**</code>-ს და მხოლოდ <code>Assigned/PickedUp/Delivered</code>-ს. ე.ი. frontend უფრო <strong>მოწინავე shipping სერვისს</strong> მოელის.</li>
+<li><strong>config:</strong> <code>API_BASE_URL</code> dev ngrok tunnel-ზეა მიბმული (არა მუდმივ prod URL-ზე).</li>
+<li><strong><code>ProductsScreen</code></strong> იყენებs hard-coded <code>http://localhost:8080</code>-ს <code>config</code>-ის ნაცვლად (მცირე შეუსაბამობა).</li>
+<li><strong>საერთო შაბლონი:</strong> <code>useFocusEffect(load)</code> + <code>api</code> + <code>t()</code> + <code>StatusBadge</code>; real-time = <strong>polling</strong> (არა WebSocket); single source of truth = <strong>backend</strong>.</li>
+</ol>
+<hr />
+<h2 id="12">12. არქიტექტურის მიმოხილვა (ფენები)</h2>
+<table>
+<thead>
+<tr>
+<th>ფენა</th>
+<th>პასუხისმგებლობა</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Controller</strong> (<code>controler/</code>)</td>
+<td>HTTP endpoints; უსაფრთხოება SecurityConfig-შია</td>
+</tr>
+<tr>
+<td><strong>Service</strong> (<code>service/</code>)</td>
+<td>ბიზნეს წესები, ვალიდაცია, state machine</td>
+</tr>
+<tr>
+<td><strong>Repository</strong> (<code>repository/</code>)</td>
+<td>Spring Data JPA</td>
+</tr>
+<tr>
+<td><strong>Domain</strong> (<code>domain/</code>)</td>
+<td>JPA entity-ები (Lombok)</td>
+</tr>
+<tr>
+<td><strong>DTO</strong> (<code>dto/</code>)</td>
+<td>chat request/response (entity არ ჟონავს)</td>
+</tr>
+<tr>
+<td><strong>Exceptions</strong> (<code>exceptions/</code>)</td>
+<td>BadRequestException, ForbiddenException</td>
+</tr>
+</tbody>
+</table>
+<p><strong>DB:</strong> PostgreSQL · Flyway მართავს schema-ს (<code>V1__init_schema.sql</code>) · Hibernate <code>ddl-auto=validate</code> · dev seed <code>R__seed_test_data.sql</code> (repeatable, TRUNCATE CASCADE) · prod-ში seed არ იტვირთება · naming camelCase→snake_case.</p>
+<hr />
+<h2 id="-">შემაჯამებელი ბიზნეს-წესები</h2>
+<ol>
+<li><strong>შეკვეთა მკაცრი state machine-ია</strong> — ეტაპს ვერ გადახტები</li>
+<li><strong>Stock იკლებს შეკვეთისას, ბრუნდება გაუქმებისას</strong></li>
+<li><strong>Shipped მხოლოდ მინიჭებული მძღოლით</strong></li>
+<li><strong>ერთი მძღოლი — ერთი აქტიური მიწოდება</strong></li>
+<li><strong>carrier-ის მინიჭება ავტომატურად ხსნის ჩატს</strong></li>
+<li><strong>ერთ shipping-ზე — ერთი ჩატი</strong> (idempotent)</li>
+<li><strong>ჩატი მხოლოდ მონაწილეებისთვის</strong></li>
+<li><strong>რედაქტირება მხოლოდ Pending / PickedUp სტატუსებზე</strong></li>
+<li><strong>frontend — როლზე დაფუძნებული</strong> (3 ცალკე ნავიგაცია) <strong>+ 17-ენიანი i18n</strong></li>
+</ol><hr>
+<p style="text-align:center;color:#889;font-size:12px">
+ATOB / TrackTransporter — ბიზნეს ლოგიკა · დაგენერირებულია კოდიდან ·
+PDF-ისთვის: გახსენი ბრაუზერში → Ctrl+P → „Save as PDF"</p>
+</body></html>

@@ -1,0 +1,51 @@
+# ─── Secrets (NEVER commit) ──────────────────────────────────────────────────
+**/.env
+deploy/.env
+*.pem
+*.key
+id_ed25519*
+*_rsa
+*.p12
+google-services.json
+**/NEW_*_PASSWORD.txt
+
+# ─── Node / web ──────────────────────────────────────────────────────────────
+**/node_modules/
+web-admin/.next/
+web-admin/out/
+frontend/dist/
+npm-debug.log*
+
+# ─── Java / Spring ───────────────────────────────────────────────────────────
+backend/target/
+*.class
+
+# ─── Android build ───────────────────────────────────────────────────────────
+frontend/android/app/build/
+frontend/android/build/
+frontend/android/.gradle/
+frontend/android/.cxx/
+*.apk
+*.aab
+*.keystore
+!frontend/android/app/debug.keystore
+
+# ─── Backups / data ──────────────────────────────────────────────────────────
+deploy/backups/*.sql.gz
+deploy/backups/*.sql
+deploy/nginx/certbot/conf/
+deploy/nginx/certbot/www/
+
+# ─── Gradle / IDE / OS ───────────────────────────────────────────────────────
+.gradle/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# Agent / local config
+.claude/
+# auth-bypass test helpers (never ship)
+web-admin/public/seed-*.html

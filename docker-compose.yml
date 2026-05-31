@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: atobapp
+      POSTGRES_USER: atob
+      POSTGRES_PASSWORD: atob123
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atob -d atobapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

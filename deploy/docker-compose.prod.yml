@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME}
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Spring Boot Backend ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST:               postgres
+      DB_NAME:               ${DB_NAME}
+      DB_USER:               ${DB_USER}
+      DB_PASSWORD:           ${DB_PASSWORD}
+      ALLOWED_ORIGINS:       ${ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    expose:
+      - "8080"
+
+  # ─── Nginx reverse proxy ────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+    networks:
+      - internal
+      - external
+
+  # ─── Certbot (SSL renewal) ──────────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/certbot/www:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c "trap exit TERM;
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet;
+          sleep 12h & wait $${!};
+        done"
+
+volumes:
+  pgdata:
+
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge

@@ -1,0 +1,51 @@
+# ═══════════════════════════════════════════════════════════════
+# docker-compose.dryrun.yml — LOCAL production dry-run
+# Same backend image + prod profile + persistent postgres as prod,
+# but: backend port mapped to host 8080, no nginx/certbot (no domain).
+# Purpose: prove the deploy artifact works before paying for a VPS.
+# ═══════════════════════════════════════════════════════════════
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${DB_NAME}
+      POSTGRES_USER:     ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata_dryrun:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: atob-backend:dryrun        # pre-built image
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST:               postgres
+      DB_NAME:               ${DB_NAME}
+      DB_USER:               ${DB_USER}
+      DB_PASSWORD:           ${DB_PASSWORD}
+      ALLOWED_ORIGINS:       ${ALLOWED_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"                   # mapped to host for smoke testing
+    networks:
+      - internal
+
+volumes:
+  pgdata_dryrun:
+
+networks:
+  internal:
+    driver: bridge

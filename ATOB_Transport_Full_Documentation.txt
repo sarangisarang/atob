@@ -1,0 +1,656 @@
+═══════════════════════════════════════════════════════════════════
+  ATOB Transport / TrackTransporter — სრული დოკუმენტაცია
+  თარიღი: 2026-05-30
+  სტატუსი: Phase 0 CLOSED | Phase 1 Hardening DONE | 21/21 PASS
+═══════════════════════════════════════════════════════════════════
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. პროდუქტის იდეა
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ATOB Transport — სახმელეთო გადაზიდვების მართვის მობილური პლატფორმა.
+სამიზნე: 5–50 მანქანიანი მცირე/საშუალო სატვირთო კომპანიები.
+პრობლემა: WhatsApp + Excel + ტელეფონი → ქაოსი.
+გამოსავალი: Admin / Driver / Customer ერთ სისტემაში.
+
+Transport types: LIGHT | TRUCK | TRAILER
+Pricing: €49–199/month (SaaS subscription)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. ტექნოლოგია
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Backend:
+  - Java 17 + Spring Boot 3.1.2
+  - Spring Security (HTTP Basic Auth, Role-based)
+  - Spring Data JPA + Hibernate 6
+  - PostgreSQL 15 (Docker, port 5433)
+  - Flyway schema migrations
+  - Bucket4j 8.10.1 (GPS rate limiting)
+  - Lombok
+
+Frontend:
+  - React Native (Expo)
+  - Android APK
+  - 18 ენა (ka, en, de, fr, es, it, ru, uk, ar, zh, ja, ko, nl, pl, pt, ro, tr, ar)
+  - Leaflet.js GPS map (WebView)
+
+Tunnel (dev):
+  - localhost.run SSH tunnel → HTTPS public URL
+  - Anonymous: URL იცვლება restart-ზე → production-ში VPS საჭიროა
+  - URL-ის შეცვლა: მხოლოდ frontend/src/config.js — არ საჭიროებს APK rebuild-ს
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. ფაილების სტრუქტურა
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/home/python/Desktop/TrackTransporter/
+  backend/
+    src/main/java/com/atob/atobapp/
+      domain/          ← Entity classes + Enums
+      repository/      ← Spring Data JPA interfaces (with Pageable)
+      service/         ← Business logic + TrackingRateLimiter
+      controler/       ← REST controllers (typo intentional — legacy)
+        ApiShippingController.java  ← main shipping controller
+        VehicleController.java
+        (ShippingController.java DELETED — old /shipping/** routes removed)
+      config/          ← Security config
+      dto/             ← Response DTOs (records)
+      exceptions/      ← BadRequestException, ForbiddenException
+      security/        ← MyUserDetailsService
+    src/main/resources/
+      application.properties
+      db/migration/
+        V1__init_schema.sql
+        V2__add_transport_features.sql
+      db/dev/
+        R__seed_test_data.sql
+  frontend/
+    src/
+      config.js        ← ← ← BASE_URL ერთ ადგილას (შეცვლა აქ!)
+      screens/
+      api/client.js    ← imports BASE_URL from config.js
+      components/      ← StatusBadge (shipping/order/carrier types)
+      i18n/            ← 18 language files
+  scripts/
+    smoke-phase1.sh    ← Automated API smoke test (21 cases)
+  docker-compose.yml
+  ATOB_Transport_Full_Documentation.txt  ← ეს ფაილი
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. Tunnel URL-ის შეცვლა (ყოველი restart-ის შემდეგ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+მხოლოდ ეს ერთი ფაილი:
+
+  frontend/src/config.js:
+    export const API_BASE_URL = 'https://NEW-URL.lhr.life';
+
+APK rebuild საჭირო არ არის ყოველ URL change-ზე.
+(Metro bundler-ით გაშვებისას ცვლილება ავტომატურად მუშაობს)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. Domain Model
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5.1 Enums
+
+  TransportType:
+    LIGHT | TRUCK | TRAILER
+
+  ShippingStatus (canTransitionTo + isTerminal):
+    CREATED → ASSIGNED → PICKUP_IN_PROGRESS → PICKED_UP → IN_TRANSIT → DELIVERED
+    CREATED/ASSIGNED → CANCELLED
+    PICKUP_IN_PROGRESS/PICKED_UP/IN_TRANSIT → FAILED
+    Terminal (no further transitions): DELIVERED, CANCELLED, FAILED
+
+  VehicleType:
+    CAR | VAN | TRUCK | TRAILER
+
+  CargoType:
+    GENERAL_GOODS | VEHICLE | CONSTRUCTION_MATERIAL | EQUIPMENT | OTHER
+
+  OrderStatus (TransportOrder):
+    Pending → Processing → WaitingCarrier → Shipped → Delivered | Cancelled
+
+5.2 Entities
+
+  Carrier (= Driver in current model)
+    id, email, firstName, lastName, password, address, postcode, city, phone
+    ⚠️ Carrier ეს არის driver — future refactor: Carrier=company, Driver=person
+
+  Customer
+    id, email, firstName, lastName, password, address, postcode, city, phone
+
+  Vehicle
+    id, plateNumber, vehicleType, maxWeightKg, maxVolumeM3, active, carrier(FK), createdAt
+
+  Location
+    id, address, postcode, city, phone
+
+  Product
+    id, productName, productDesc, hasImage, imageUrl, stock, carrier(FK), images(BYTEA)
+
+  TransportOrder
+    id, orderId, orderNo, orderDate, shippingDate, deliveredDate, orderStatus,
+    shippingFrom(FK Location), shippingTo(FK Location), customer(FK), product(FK)
+
+  Shipping  ← CORE ENTITY
+    id, transportType, shippingStatus,
+    deliveryStartAt, deliveryEndAt,
+    trackingLatitude, trackingLongitude,
+    notes, updatedAt,
+    carrier(FK — driver), vehicle(FK), order(FK TransportOrder)
+
+  Cargo
+    id, shipping(FK), name, description, cargoType,
+    weightKg, lengthCm, widthCm, heightCm,
+    vin (vehicle cargo only), plateNumber, quantity
+
+  TrackingEvent
+    id, shipping(FK), carrier(FK), latitude, longitude, speed, recordedAt
+
+  ChatConversation
+    id, customerId, driverId, shippingId (UNIQUE), active, createdAt, updatedAt
+
+  Message
+    id, conversation(FK), senderId, senderRole(CUSTOMER|DRIVER), content, sentAt, read
+
+  ServiceUser
+    id, username, password (bcrypt or noop)
+
+  UserRole
+    id, roleName (ROLE_ADMIN|ROLE_DRIVER|ROLE_CUSTOMER), user(FK)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. API Reference (სრული)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6.1 Auth
+  GET  /auth/me
+    → {username, role, carrierId/customerId, firstName, lastName}
+
+6.2 Shippings — FROZEN API CONTRACT
+  GET    /api/shippings                         role-filtered list
+    params: ?page=0&size=20 (max size=100, sorted by updatedAt DESC)
+  GET    /api/shippings/{id}                    ownership-checked
+  GET    /api/shippings/by-order/{orderId}      OrderDetailScreen lookup
+  POST   /api/shippings                         [ADMIN] create
+  PATCH  /api/shippings/{id}/assign-driver/{driverId}   [ADMIN]
+  PATCH  /api/shippings/{id}/assign-vehicle/{vehicleId} [ADMIN]
+  PATCH  /api/shippings/{id}/start-pickup       [DRIVER — own shipment]
+  PATCH  /api/shippings/{id}/picked-up          [DRIVER — own shipment]
+  PATCH  /api/shippings/{id}/in-transit         [DRIVER — own shipment]
+  PATCH  /api/shippings/{id}/deliver            [DRIVER — own shipment]
+  PATCH  /api/shippings/{id}/cancel             [ADMIN]
+  PATCH  /api/shippings/{id}/fail               [ADMIN]
+  POST   /api/shippings/{id}/tracking           [DRIVER — own, rate limited: 1/10s]
+    body: {latitude, longitude, speed?}
+    returns: 429 Too Many Requests if exceeded
+  GET    /api/shippings/{id}/tracking           [ALL — ownership-checked]
+  GET    /api/shippings/{id}/cargo              [ALL — ownership-checked]
+  POST   /api/shippings/{id}/cargo              [ADMIN]
+  DELETE /api/shippings/cargo/{cargoId}         [ADMIN]
+
+6.3 Vehicles
+  GET    /api/vehicles                [ADMIN + DRIVER]
+    params: ?page=0&size=50 (max size=200)
+  GET    /api/vehicles/{id}           [ADMIN + DRIVER]
+  POST   /api/vehicles                [ADMIN]
+  PUT    /api/vehicles/{id}           [ADMIN]
+  DELETE /api/vehicles/{id}           [ADMIN] → soft deactivate
+
+6.4 Orders (legacy admin dashboard)
+  GET    /show/orders
+  GET    /show/order/{id}
+  POST   /show/order/{customerId}
+  PUT    /show/order/{id}
+  PUT    /show/order/{id}/processing
+  PUT    /show/order/{id}/waitingCarrier
+  PUT    /show/order/{id}/shipped
+  PUT    /show/order/{id}/delivered
+  PUT    /show/order/{id}/cancel
+
+6.5 Registration (public — no auth)
+  POST   /register/signUpCustomer
+  POST   /register/signUpDriver
+
+6.6 Chat
+  GET    /chat/conversations
+  GET    /chat/conversations/{id}/messages
+  POST   /chat/conversations/{id}/messages   body: {content}
+
+6.7 Products
+  GET    /products
+  GET    /products/{id}
+  POST   /products
+  POST   /products/{id}/image
+  GET    /products/{id}/image
+
+6.8 Locations
+  GET    /locations
+  GET    /locations/{id}
+  POST   /locations
+
+6.9 Drivers/Customers list
+  GET    /register/drivers
+  GET    /register/customers
+
+⚠️ NOTE: Old /shipping/** controller has been DELETED.
+   Only /api/shippings/** is valid now.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. ShippingResponseDTO — Frozen Field Names
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{
+  "id":                 "uuid-string",
+  "transportType":      "TRUCK",
+  "shippingStatus":     "IN_TRANSIT",
+  "carrierId":          "1",
+  "driverFirstName":    "beka",
+  "driverLastName":     "imnadze",
+  "vehicleId":          "v1",
+  "vehiclePlateNumber": "DD-AB-1234",
+  "vehicleType":        "TRUCK",
+  "fromAddress":        "Doctor LLanso 117",
+  "fromCity":           "Menorca",
+  "toAddress":          "Doctor LLanso 114",
+  "toCity":             "Alayor",
+  "deliveryStartAt":    "2023-10-11",
+  "deliveryEndAt":      "2023-11-23",
+  "trackingLatitude":   51.231,
+  "trackingLongitude":  6.791,
+  "notes":              null,
+  "updatedAt":          "2026-05-30T10:46:30"
+}
+
+⚠️ DO NOT RENAME FIELDS — frontend screens depend on exact names:
+   DriverHomeScreen, GPSTrackingScreen, OrderDetailScreen, StatusBadge
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. Flyway Migrations
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+V1__init_schema.sql
+  Tables: customer, carrier, location, product, transport_order,
+          shipping, service_user, user_role, chat_conversation, message
+
+V2__add_transport_features.sql
+  - shipping: DROP carrier_status
+  - shipping: ADD shipping_status, transport_type, notes, updated_at, vehicle_id FK
+  - CREATE TABLE vehicle (carrier_id FK, plate_number, vehicle_type, max_weight_kg, max_volume_m3)
+  - CREATE TABLE cargo (shipping_id FK, name, cargo_type, dimensions, vin, plate_number, quantity)
+  - CREATE TABLE tracking_event (shipping_id FK, carrier_id FK, lat, lon, speed, recorded_at)
+  - Indexes: shipping_status, transport_type, vehicle_id, cargo.shipping_id, tracking_event
+
+R__seed_test_data.sql (dev only — repeatable, TRUNCATE + re-insert)
+  Includes: tracking_event, cargo tables in TRUNCATE order
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. Test Credentials
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+admin:1234                              ROLE_ADMIN
+beka@gmail.com:dushqu                   ROLE_DRIVER   (carrier id=1, shipping 1)
+giorgi@gmail.com:pass123                ROLE_DRIVER   (carrier id=2, shipping 2)
+bekakikalishvili@gmail.com:dushqu       ROLE_CUSTOMER (customer id=1)
+sofia@gmail.com:dushqu                  ROLE_CUSTOMER (customer id=2)
+
+Seed Vehicles:
+  v1 — DD-AB-1234 — TRUCK   — 20000 kg — driver beka
+  v2 — DD-XY-5678 — TRAILER — 40000 kg — driver beka
+  v3 — TBS-100-AA — VAN     —  3500 kg — driver giorgi
+
+Admin password bcrypt hash of "1234":
+  {bcrypt}$2a$10$.jR4BzWbWZCUM3KPXIv9w.lBEZTX39bIUD7.njxDBbuTvTzPweb9K
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. Security Rules
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PUBLIC:
+  /register/signUpCustomer
+  /register/signUpDriver
+
+ADMIN only:
+  /show/**
+  POST /api/shippings
+  PATCH /api/shippings/*/assign-*
+  PATCH /api/shippings/*/cancel
+  PATCH /api/shippings/*/fail
+  POST/PUT/DELETE /api/vehicles
+  POST/DELETE /api/shippings/*/cargo
+
+DRIVER (own shipments only):
+  GET /api/vehicles (read)
+  PATCH /api/shippings/{id}/start-pickup  — must be assigned driver
+  PATCH /api/shippings/{id}/picked-up     — must be assigned driver
+  PATCH /api/shippings/{id}/in-transit    — must be assigned driver
+  PATCH /api/shippings/{id}/deliver       — must be assigned driver
+  POST /api/shippings/{id}/tracking       — must be assigned driver + rate limited
+
+ALL AUTHENTICATED:
+  GET /api/shippings         — role-filtered
+  GET /api/shippings/{id}    — ownership-checked
+  GET /api/shippings/{id}/tracking — ownership-checked
+  /chat/** , /auth/me
+
+Ownership (enforced in ApiShippingController):
+  Admin   → sees everything
+  Driver  → shipping.carrier.email == principal.name
+  Customer→ shipping.order.customer.email == principal.name
+
+ShippingStatus.isTerminal() blocks:
+  - assign driver/vehicle to terminal shipment
+  - add cargo to terminal shipment
+  - any status update on terminal shipment
+
+GPS Rate Limit (TrackingRateLimiter, Bucket4j):
+  - Max 1 GPS update per 10 seconds per driver
+  - Returns 429 Too Many Requests if exceeded
+  - In-memory token bucket — no Redis needed
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Frontend Screens
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ADMIN:
+  DashboardScreen         ← order stats + recent orders
+  OrdersListScreen        ← filter by status, search
+  OrderDetailScreen       ← full order + shipping (uses /by-order/) + assign driver
+  CreateOrderScreen       ← 4-step wizard: customer → product → route → confirm
+  ProductsScreen          ← product list
+  ProductFormScreen       ← create/edit product
+  DriversScreen           ← driver list
+  GPSTrackingScreen       ← map + 4 status buttons + GPS update
+
+DRIVER:
+  DriverHomeScreen        ← active shipment + map + lifecycle buttons:
+                            [ASSIGNED]           → Start Pickup
+                            [PICKUP_IN_PROGRESS] → Picked Up
+                            [PICKED_UP]          → Start Transit
+                            [IN_TRANSIT]         → Deliver
+
+CUSTOMER:
+  CustomerShopScreen      ← browse products
+  CustomerOrderFormScreen ← place order
+  CustomerOrdersScreen    ← order history
+
+ALL:
+  LoginScreen
+  RegisterTypeScreen / RegisterFormScreen
+  ChatConversationListScreen / ChatThreadScreen
+  SettingsScreen (18 language selector)
+
+StatusBadge component:
+  type="order"    → Pending/Processing/WaitingCarrier/Shipped/Delivered/Cancelled
+  type="shipping" → CREATED/ASSIGNED/PICKUP_IN_PROGRESS/PICKED_UP/IN_TRANSIT/
+                    DELIVERED/CANCELLED/FAILED
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. სისტემის გაშვება (step-by-step)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1 — PostgreSQL
+  cd /home/python/Desktop/TrackTransporter
+  docker compose up -d
+  # port 5433, db: atobapp, user: atob, pass: atob123
+
+Step 2 — Backend
+  cd backend
+  ./mvnw spring-boot:run
+  # http://localhost:8080
+  # Flyway runs V1 + V2 + seed automatically on start
+
+Step 3 — Tunnel
+  ssh -o StrictHostKeyChecking=no -R 80:localhost:8080 nokey@localhost.run
+  # copy https://xxxx.lhr.life URL
+
+Step 4 — Update URL (only this one file!)
+  frontend/src/config.js:
+    export const API_BASE_URL = 'https://xxxx.lhr.life';
+
+Step 5 — Smoke test
+  bash scripts/smoke-phase1.sh
+  # or: BASE_URL=https://xxxx.lhr.life bash scripts/smoke-phase1.sh
+  # Expected: 21/21 PASS
+
+Step 6 — APK build
+  cd frontend/android
+  ./gradlew assembleRelease
+  # output: app/build/outputs/apk/release/app-release.apk
+  # serve: python3 -m http.server 9091
+
+Reset DB (clean state):
+  docker exec tracktransporter-postgres-1 psql -U atob -d atobapp \
+    -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+  # restart backend → Flyway re-runs everything
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. Smoke Test — 21 Cases
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Location: scripts/smoke-phase1.sh
+Usage:    bash scripts/smoke-phase1.sh
+          BASE_URL=https://xxxx.lhr.life bash scripts/smoke-phase1.sh
+
+Cases:
+   1. Admin login → 200
+   2. Driver1 login → 200
+   3. Driver2 login → 200
+   4. Customer login → 200
+   5. Admin sees all shippings (paginated)
+   6. Driver1 sees own shipment (role-filtered)
+   7. Customer sees own shipment
+   8. Driver2 blocked from Driver1 shipment → 400
+   9. Customer2 blocked from Customer1 shipment → 400
+  10. Admin assigns vehicle + driver → ASSIGNED
+  11. ASSIGNED → PICKUP_IN_PROGRESS
+  12. PICKUP_IN_PROGRESS → PICKED_UP
+  13. PICKED_UP → IN_TRANSIT
+  14. IN_TRANSIT → DELIVERED
+  15. Invalid jump: ASSIGNED → DELIVERED → blocked
+  16. DELIVERED → CANCELLED → blocked (terminal)
+  17. Driver posts GPS for own shipment → 200
+  18. Driver blocked from other's GPS
+  19. Customer reads own tracking history → 200
+  20. Customer2 blocked from other's tracking
+  21. GET /api/shippings/by-order/1 → 200
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. Phase Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 0 — CLOSED ✅
+  ✅ TransportType, ShippingStatus (Map.of + isTerminal), VehicleType, CargoType
+  ✅ Vehicle, Cargo, TrackingEvent entities + @PrePersist
+  ✅ Flyway V1 + V2 + indexes
+  ✅ Seed data with new statuses + vehicles
+  ✅ Full lifecycle: CREATED→ASSIGNED→PICKUP_IN_PROGRESS→PICKED_UP→IN_TRANSIT→DELIVERED
+  ✅ Invalid transitions: 5/5 blocked by backend
+  ✅ Terminal state protection (isTerminal())
+  ✅ Role-based access (Admin/Driver/Customer)
+  ✅ Ownership isolation
+  ✅ DTO layer (flat, no recursive JSON)
+  ✅ Routes unified: /api/shippings/**, /api/vehicles/**
+  ✅ Frontend screens fixed: DriverHome, GPSTracking, OrderDetail
+
+PHASE 1 HARDENING — DONE ✅
+  ✅ API contract frozen (ShippingResponseDTO field names)
+  ✅ smoke-phase1.sh (21/21 PASS)
+  ✅ TrackingEvent GPS workflow verified
+  ✅ Ownership tests end-to-end
+  ✅ Frontend ↔ backend field name consistency
+  ✅ config.js — BASE_URL single source (no APK rebuild per URL change)
+  ✅ Old ShippingController removed (/shipping/** gone)
+  ✅ Pagination on /api/shippings + /api/vehicles
+  ✅ GPS rate limiting: 1 update/10s per driver (Bucket4j, 429 on exceed)
+
+PHASE 1.5 — Image Upload Hardening + POD Foundation — DONE ✅
+  ✅ Product image upload baseline tested
+  ✅ FileStorageService abstraction added (interface)
+  ✅ StoredFile entity added (generic binary storage)
+  ✅ FileCategory enum added: PRODUCT_IMAGE, DELIVERY_PROOF
+  ✅ DatabaseFileStorageService implemented (PostgreSQL BYTEA)
+  ✅ Max file size validation: 5 MB → 400
+  ✅ MIME validation: jpeg/png/webp only → 400
+  ✅ ProductController refactored — delegates storage logic, no inline image1
+  ✅ Re-upload deletes old file (no orphans, FK-safe order)
+  ✅ V3 migration added:
+       - stored_file (generic file table)
+       - product.image_file_id (FK → stored_file)
+       - delivery_proof (one per shipping, UNIQUE)
+  ✅ DeliveryProof entity / repository / service added
+  ✅ POD endpoints:
+       - POST /api/shippings/{id}/proof        (driver, delivered, multipart)
+       - GET  /api/shippings/{id}/proof        (ownership-checked)
+       - GET  /api/shippings/{id}/proof/photo  (ownership-checked)
+  ✅ Delivered shipment stores receiverName + photo + deliveredAt
+  ✅ Proof before DELIVERED → blocked
+  ✅ Duplicate proof → blocked (one per shipping)
+  ✅ Non-owner driver blocked from proof
+  ✅ Existing smoke tests still pass
+  ✅ Full verification: 32/32 PASS
+  ✅ Frozen DTO fields unchanged
+
+  ⚠️ STORAGE DEBT (deferred, NOT cancelled):
+     BYTEA is demo-level storage, not long-term production storage.
+     S3/Cloudflare R2 migration deferred until AFTER VPS deploy.
+     Architecture is S3-ready: only the FileStorageService impl changes,
+     no controller touches storage internals.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. შემდეგი Bottlenecks (Priority Order)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CRITICAL — demo-სთვის:
+  ⚠️ VPS production deploy
+     - Hetzner VPS €5/month (https://hetzner.com)
+     - Docker Compose: nginx + certbot + spring + postgres
+     - Fixed domain: api.atob-transport.com
+     - .env for secrets (no hardcoded passwords)
+     - Backups: daily DB dump
+
+PHASE 1 FEATURES:
+  □ Push notifications (Firebase FCM)
+     - Event: shipping assigned → driver notified
+     - Event: status change → customer notified
+  □ Proof of Delivery (POD)
+     - Photo + receiver name at delivery point
+     - Storage: BYTEA in DB or S3/Cloudflare R2
+  □ Web admin dashboard (Next.js)
+     - Complement mobile app for office admins
+
+ARCHITECTURE DEBT:
+  □ Carrier entity refactor (IMPORTANT)
+     Current: Carrier = driver person
+     Future:  Carrier = company, Driver = separate User entity
+     Risk: affects all FK relationships — plan before doing
+  □ JWT auth (replace HTTP Basic for production)
+     - Token expiry, refresh token
+     - No credentials on every request
+  □ spring.jpa.open-in-view=false (suppress warning)
+  □ Soft delete on Shipping (deleted_at timestamp)
+
+PHASE 2 — SCALE:
+  □ iOS app (React Native — mostly copy-paste)
+  □ Route optimization (Google Maps API)
+  □ Multi-company SaaS (Carrier ownership per tenant)
+  □ Stripe billing integration
+  □ Advanced analytics + reporting
+  □ Redis for rate limiting (replace in-memory Bucket4j)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. Known Issues / Gotchas
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Tunnel URL
+   - localhost.run anonymous changes URL every restart
+   - FIX: edit frontend/src/config.js only — no APK rebuild needed
+
+2. Hibernate naming: maxVolumeM3
+   - SpringPhysicalNamingStrategy → max_volumem3 (no _ before digit 3)
+   - FIX: @Column(name = "max_volume_m3") on Vehicle.maxVolumeM3
+
+3. Lazy loading
+   - Carrier in Vehicle: @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
+   - Vehicle in Shipping: FetchType.EAGER (prevents proxy serialization error)
+   - Cargo.shipping: LAZY — CargoResponseDTO.from() handles it safely
+
+4. DB reset
+   docker exec tracktransporter-postgres-1 psql -U atob -d atobapp \
+     -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+   Then restart backend — Flyway re-runs V1+V2+seed
+
+5. Carrier entity naming
+   - Carrier in DB = driver person (not a company)
+   - ShippingResponseDTO correctly exposes: carrierId / driverFirstName / driverLastName
+   - Never expose Carrier entity directly — use DTO
+
+6. GPS rate limit in-memory
+   - TrackingRateLimiter uses ConcurrentHashMap — resets on backend restart
+   - Production: replace with Redis-backed Bucket4j
+
+7. Admin password
+   - "1234" → bcrypt hash: {bcrypt}$2a$10$.jR4BzWbWZCUM3KPXIv9w.lBEZTX39bIUD7.njxDBbuTvTzPweb9K
+
+8. Old ShippingController
+   - DELETED — any screen using /shipping/** will get 404
+   - All screens migrated to /api/shippings/**
+   - client.js legacy aliases point to new routes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. VPS Production Deploy Guide (Future)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Recommended: Hetzner Cloud CX22 (4 vCPU, 4GB RAM, €5/month)
+
+docker-compose.prod.yml structure:
+  services:
+    nginx:       reverse proxy + SSL (certbot)
+    backend:     Spring Boot JAR
+    postgres:    PostgreSQL 15 with volume
+    certbot:     Let's Encrypt renewal
+
+.env (never commit):
+  DB_NAME=atobapp
+  DB_USER=atob_user
+  DB_PASSWORD=strong_random_password
+  JWT_SECRET=64_char_random_string
+  APP_BASE_URL=https://api.atob-transport.com
+  ALLOWED_ORIGINS=https://atob-transport.com
+
+After deploy:
+  1. Update frontend/src/config.js → API_BASE_URL = 'https://api.atob-transport.com'
+  2. Rebuild APK once (final build)
+  3. Upload to Google Play internal testing
+
+Backups:
+  0 3 * * * docker exec postgres pg_dump -U atob atobapp | gzip > /backups/$(date +%F).sql.gz
+
+
+═══════════════════════════════════════════════════════════════════
+  END OF DOCUMENT
+  Final status: production-demo ready (pending VPS deploy)
+  Smoke test: 32/32 PASS (local) — Phase 0 + 1 + 1.5
+  Production smoke test: pending VPS deploy
+  Last updated: 2026-05-30
+═══════════════════════════════════════════════════════════════════
