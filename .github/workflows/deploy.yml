@@ -42,6 +42,16 @@ jobs:
             backend deploy \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/atob-transport/"
 
+      # Safety gate: never rebuild the backend if the server is missing its
+      # secrets file — a blank env starts a backend that can't reach the DB
+      # and takes prod down. Fail loudly *before* touching any container.
+      - name: Pre-flight — verify prod .env
+        run: |
+          ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'test -s /opt/atob-transport/deploy/.env && grep -q "^DB_PASSWORD=." /opt/atob-transport/deploy/.env' \
+          || { echo "::error::Prod .env is missing or has no DB_PASSWORD — aborting before restart"; exit 1; }
+
       - name: Build & restart backend
         run: |
           ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=accept-new \
