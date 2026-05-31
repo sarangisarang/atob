@@ -17,15 +17,28 @@ public class ShippingService {
     private final DriverRepository driverRepository;
     private final VehicleRepository vehicleRepository;
     private final TrackingEventRepository trackingEventRepository;
+    private final ChatService chatService;
 
     public ShippingService(ShippmentRepository shippingRepository,
                            DriverRepository driverRepository,
                            VehicleRepository vehicleRepository,
-                           TrackingEventRepository trackingEventRepository) {
+                           TrackingEventRepository trackingEventRepository,
+                           ChatService chatService) {
         this.shippingRepository       = shippingRepository;
         this.driverRepository         = driverRepository;
         this.vehicleRepository        = vehicleRepository;
         this.trackingEventRepository  = trackingEventRepository;
+        this.chatService              = chatService;
+    }
+
+    // Opens (idempotently) the customer↔driver chat once a shipment has a driver.
+    private void ensureConversation(Shipping shipping) {
+        if (shipping.getCarrier() == null) return;
+        if (shipping.getOrder() == null || shipping.getOrder().getCustomer() == null) return;
+        chatService.createConversationForShipping(
+                shipping.getOrder().getCustomer().getId(),
+                shipping.getCarrier().getId(),
+                shipping.getId());
     }
 
     // ─── Create ──────────────────────────────────────────────────────────────
@@ -59,7 +72,9 @@ public class ShippingService {
         }
 
         shipping.setUpdatedAt(LocalDateTime.now());
-        return shippingRepository.save(shipping);
+        Shipping saved = shippingRepository.save(shipping);
+        ensureConversation(saved);
+        return saved;
     }
 
     // Marketplace: a driver claims an unassigned order for themselves.
@@ -82,7 +97,9 @@ public class ShippingService {
         shipping.setCarrier(driver);
         validateAndTransition(shipping, ShippingStatus.ASSIGNED);
         shipping.setUpdatedAt(LocalDateTime.now());
-        return shippingRepository.save(shipping);
+        Shipping saved = shippingRepository.save(shipping);
+        ensureConversation(saved);
+        return saved;
     }
 
     @Transactional
