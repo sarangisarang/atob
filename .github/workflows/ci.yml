@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (Maven + tests)
+    runs-on: ubuntu-latest
+
+    # Spring Boot tests load the full context and run Flyway, so they need a real
+    # Postgres. We spin one up and point the app at it via env overrides.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: atobapp
+          POSTGRES_USER: atob
+          POSTGRES_PASSWORD: atob
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U atob -d atobapp"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/atobapp
+      SPRING_DATASOURCE_USERNAME: atob
+      SPRING_DATASOURCE_PASSWORD: atob
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Make mvnw executable
+        working-directory: backend
+        run: chmod +x mvnw
+
+      - name: Build & test
+        working-directory: backend
+        run: ./mvnw -B -ntp clean verify
+
+  web-admin:
+    name: Web Admin (Next.js build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web-admin/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web-admin
+        run: npm ci
+
+      - name: Build
+        working-directory: web-admin
+        run: npm run build
