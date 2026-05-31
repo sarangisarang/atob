@@ -19,13 +19,13 @@ export default function RegisterTypeScreen({ navigation }) {
         <TouchableOpacity style={[styles.card, styles.cardCustomer]} onPress={() => choose('customer')} activeOpacity={0.85}>
           <Text style={styles.cardEmoji}>🛍️</Text>
           <Text style={styles.cardTitle}>{t('registerAsCustomer')}</Text>
-          <Text style={styles.cardDesc}>შეუკვეთე პროდუქტები</Text>
+          <Text style={styles.cardDesc}>{t('customerRoleDesc')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.card, styles.cardDriver]} onPress={() => choose('driver')} activeOpacity={0.85}>
           <Text style={styles.cardEmoji}>🚚</Text>
           <Text style={styles.cardTitle}>{t('registerAsDriver')}</Text>
-          <Text style={styles.cardDesc}>გადაიტანე შეკვეთები</Text>
+          <Text style={styles.cardDesc}>{t('driverRoleDesc')}</Text>
         </TouchableOpacity>
       </View>
 

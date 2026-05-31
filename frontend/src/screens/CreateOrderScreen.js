@@ -32,6 +32,7 @@ function StepBar({ current }) {
 }
 
 function SelectModal({ visible, title, items, renderItem, onClose }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const filtered = items.filter((item) =>
     renderItem(item, true).toLowerCase().includes(query.toLowerCase())
@@ -47,7 +48,7 @@ function SelectModal({ visible, title, items, renderItem, onClose }) {
         </View>
         <TextInput
           style={styles.modalSearch}
-          placeholder="ძიება..."
+          placeholder={t('search')}
           value={query}
           onChangeText={setQuery}
         />
@@ -59,7 +60,7 @@ function SelectModal({ visible, title, items, renderItem, onClose }) {
               <Text style={styles.modalItemText}>{renderItem(item)}</Text>
             </TouchableOpacity>
           )}
-          ListEmptyComponent={<Text style={styles.empty}>ვერ მოიძებნა</Text>}
+          ListEmptyComponent={<Text style={styles.empty}>{t('noResults')}</Text>}
         />
       </View>
     </Modal>
@@ -228,7 +229,7 @@ export default function CreateOrderScreen({ navigation }) {
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
             {fromLocation && toLocation && fromLocation.id === toLocation.id && (
-              <Text style={styles.errorText}>⚠ გამსვლელი და დანიშნულება ერთი არ შეიძლება იყოს</Text>
+              <Text style={styles.errorText}>{t('sameLocationError')}</Text>
             )}
           </View>
         )}
@@ -277,7 +278,7 @@ export default function CreateOrderScreen({ navigation }) {
             style={[styles.nextBtn, !canNext() && styles.disabled]}
             onPress={() => canNext() && setStep(step + 1)}
           >
-            <Text style={styles.nextBtnText}>შემდეგი →</Text>
+            <Text style={styles.nextBtnText}>{t('next')}</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity

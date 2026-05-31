@@ -131,14 +131,14 @@ export default function ProductFormScreen({ route, navigation }) {
         {/* Image picker buttons */}
         <View style={styles.imageButtons}>
           <TouchableOpacity style={styles.imageBtn} onPress={pickImage}>
-            <Text style={styles.imageBtnText}>🖼 გალერეა</Text>
+            <Text style={styles.imageBtnText}>{t('gallery')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.imageBtn} onPress={takePhoto}>
-            <Text style={styles.imageBtnText}>📷 კამერა</Text>
+            <Text style={styles.imageBtnText}>{t('camera')}</Text>
           </TouchableOpacity>
           {imageUri && (
             <TouchableOpacity style={[styles.imageBtn, styles.imageBtnClear]} onPress={() => setImageUri(null)}>
-              <Text style={styles.imageBtnText}>✕ გაუქმება</Text>
+              <Text style={styles.imageBtnText}>{t('cancelImg')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -186,13 +186,13 @@ export default function ProductFormScreen({ route, navigation }) {
           {uploading ? (
             <View style={styles.savingRow}>
               <ActivityIndicator color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.saveBtnText}>სურათი იტვირთება...</Text>
+              <Text style={styles.saveBtnText}>{t('imageUploading')}</Text>
             </View>
           ) : saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.saveBtnText}>
-              {isEdit ? '💾 შენახვა' : '+ ' + t('addProduct')}
+              {isEdit ? t('saveImg') : '+ ' + t('addProduct')}
             </Text>
           )}
         </TouchableOpacity>
