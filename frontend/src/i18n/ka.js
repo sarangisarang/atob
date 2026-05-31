@@ -1,4 +1,9 @@
 export default {
+  vehicle: 'მანქანა',
+  startPickup: '▶ აღების დაწყება',
+  startTransit: '🚛 გზაში გასვლა',
+  latitude: 'განედი',
+  longitude: 'გრძედი',
   availableOrders: 'თავისუფალი შეკვეთები', noAvailableOrders: 'ამჟამად თავისუფალი შეკვეთა არ არის', acceptOrder: 'აღება',
   appName: 'ATOB ტრანსპორტი',
 

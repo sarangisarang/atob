@@ -1,4 +1,9 @@
 export default {
+  vehicle: 'Vehicle',
+  startPickup: '▶ Start Pickup',
+  startTransit: '🚛 Start Transit',
+  latitude: 'Latitude',
+  longitude: 'Longitude',
   availableOrders: 'Available orders', noAvailableOrders: 'No available orders right now', acceptOrder: 'Accept',
   appName: 'ATOB Transport',
 

@@ -196,10 +196,10 @@ L.marker([${lat},${lon}]).addTo(map).bindPopup('📦').openPopup();
             {s.fromCity && <InfoRow label={t('from')} value={`${s.fromCity}${s.fromAddress ? ' — ' + s.fromAddress : ''}`} />}
             {s.toCity   && <InfoRow label={t('to')}   value={`${s.toCity}${s.toAddress ? ' — ' + s.toAddress : ''}`} />}
             {s.vehiclePlateNumber && (
-              <InfoRow label="Vehicle" value={`${s.vehicleType ?? ''} · ${s.vehiclePlateNumber}`} />
+              <InfoRow label={t('vehicle')} value={`${s.vehicleType ?? ''} · ${s.vehiclePlateNumber}`} />
             )}
-            <InfoRow label="Lat" value={lat.toFixed(5)} />
-            <InfoRow label="Lon" value={lon.toFixed(5)} />
+            <InfoRow label={t('latitude')} value={lat.toFixed(5)} />
+            <InfoRow label={t('longitude')} value={lon.toFixed(5)} />
 
             <TouchableOpacity
               style={[styles.btn, styles.btnBlue, locating && styles.disabled]}
@@ -215,7 +215,7 @@ L.marker([${lat},${lon}]).addTo(map).bindPopup('📦').openPopup();
                 onPress={() => handleTransition(startPickup)} disabled={acting}
               >
                 {acting ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.btnText}>▶ Start Pickup</Text>}
+                  : <Text style={styles.btnText}>{t('startPickup')}</Text>}
               </TouchableOpacity>
             )}
 
@@ -235,7 +235,7 @@ L.marker([${lat},${lon}]).addTo(map).bindPopup('📦').openPopup();
                 onPress={() => handleTransition(inTransit)} disabled={acting}
               >
                 {acting ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.btnText}>🚛 Start Transit</Text>}
+                  : <Text style={styles.btnText}>{t('startTransit')}</Text>}
               </TouchableOpacity>
             )}
 

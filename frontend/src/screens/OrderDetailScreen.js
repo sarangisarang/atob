@@ -219,15 +219,15 @@ export default function OrderDetailScreen({ route, navigation }) {
               : t('unassigned')}
           />
           {shipping.vehiclePlateNumber && (
-            <InfoRow label="Vehicle" value={`${shipping.vehicleType ?? ''} · ${shipping.vehiclePlateNumber}`} />
+            <InfoRow label={t('vehicle')} value={`${shipping.vehicleType ?? ''} · ${shipping.vehiclePlateNumber}`} />
           )}
           {!shipping.carrierId && (
             <TouchableOpacity style={styles.assignBtn} onPress={openAssignModal}>
               <Text style={styles.assignBtnText}>{t('assignDriver')}</Text>
             </TouchableOpacity>
           )}
-          <InfoRow label="GPS Lat" value={shipping.trackingLatitude} />
-          <InfoRow label="GPS Lon" value={shipping.trackingLongitude} />
+          <InfoRow label={t('latitude')} value={shipping.trackingLatitude} />
+          <InfoRow label={t('longitude')} value={shipping.trackingLongitude} />
           <TouchableOpacity
             style={styles.trackBtn}
             onPress={() => navigation.navigate('GPSTracking', { shipping })}

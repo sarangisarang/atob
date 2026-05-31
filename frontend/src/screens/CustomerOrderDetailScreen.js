@@ -125,7 +125,7 @@ L.marker([${lat},${lon}]).addTo(m).bindPopup('📦').openPopup();
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t('driver')} · {t('shippingSection')}</Text>
           {s.driverFirstName && <Row label={t('driver')} value={`${s.driverFirstName} ${s.driverLastName || ''}`} />}
-          {s.vehiclePlateNumber && <Row label="Vehicle" value={`${s.vehicleType || ''} · ${s.vehiclePlateNumber}`} />}
+          {s.vehiclePlateNumber && <Row label={t('vehicle')} value={`${s.vehicleType || ''} · ${s.vehiclePlateNumber}`} />}
         </View>
       )}
 

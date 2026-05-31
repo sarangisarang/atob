@@ -84,11 +84,11 @@ export default function GPSTrackingScreen({ route }) {
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Latitude</Text>
+          <Text style={styles.label}>{t('latitude')}</Text>
           <Text style={styles.value}>{lat.toFixed(6)}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.label}>Longitude</Text>
+          <Text style={styles.label}>{t('longitude')}</Text>
           <Text style={styles.value}>{lon.toFixed(6)}</Text>
         </View>
 
@@ -101,7 +101,7 @@ export default function GPSTrackingScreen({ route }) {
 
         {s?.vehiclePlateNumber && (
           <View style={styles.infoRow}>
-            <Text style={styles.label}>Vehicle</Text>
+            <Text style={styles.label}>{t('vehicle')}</Text>
             <Text style={styles.value}>{s.vehicleType} · {s.vehiclePlateNumber}</Text>
           </View>
         )}
@@ -120,7 +120,7 @@ export default function GPSTrackingScreen({ route }) {
             onPress={() => handleTransition(startPickup)} disabled={acting}
           >
             {acting ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.btnText}>▶ Start Pickup</Text>}
+              : <Text style={styles.btnText}>{t('startPickup')}</Text>}
           </TouchableOpacity>
         )}
 
@@ -140,7 +140,7 @@ export default function GPSTrackingScreen({ route }) {
             onPress={() => handleTransition(inTransit)} disabled={acting}
           >
             {acting ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.btnText}>🚛 Start Transit</Text>}
+              : <Text style={styles.btnText}>{t('startTransit')}</Text>}
           </TouchableOpacity>
         )}
 
